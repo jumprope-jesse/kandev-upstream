@@ -1079,5 +1079,7 @@
   "mcpUsageDescription": "您有權存取的已儲存選擇。繼承的使用情況和連線狀態顯示在工作階段中。",
   "mcpManageCatalog": "管理工作區目錄",
   "mcpLegacyRecoveryDescription": "尚未確認此工作區的舊設定匯入。現有的全域設定檔設定仍可能生效。工作區選擇和全域舊設定分別儲存。",
-  "mcpLegacyRecovery": "全域設定檔的舊設定"
+  "mcpLegacyRecovery": "全域設定檔的舊設定",
+  "mcpSelectionConflict": "選擇已更改。請重新載入選擇，檢查草稿，然後再次儲存。",
+  "mcpReloadChoices": "重新載入選擇"
 }

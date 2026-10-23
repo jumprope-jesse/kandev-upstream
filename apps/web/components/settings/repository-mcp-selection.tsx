@@ -12,7 +12,7 @@ import {
   useSettingsSaveContributor,
 } from "@/components/settings/settings-save-provider";
 import { useMCPWorkspaceDefinitions } from "@/hooks/domains/workspace/use-mcp-workspace-settings";
-import { isHandledApiError } from "@/lib/api/client";
+import { MCPSelectionSaveFeedback } from "@/components/mcp/mcp-selection-save-feedback";
 import { useMCPSettingsSelectionDraft } from "@/hooks/domains/workspace/use-mcp-settings-selection-draft";
 import { useSearchParams } from "@/lib/routing/client-router";
 import { readMCPContextHint } from "@/lib/mcp/management-links";
@@ -58,6 +58,7 @@ export function RepositoryMCPSelectionSection({
       !editor.loading &&
       !editor.saving &&
       !editor.loadError &&
+      !editor.saveError &&
       !definitions.error,
     save,
     discard: draft.discard,
@@ -102,11 +103,7 @@ export function RepositoryMCPSelectionSection({
             {t("settings:mcpLoadFailed")}
           </p>
         )}
-        {Boolean(editor.saveError) && !isHandledApiError(editor.saveError) && (
-          <p className="mt-2 text-sm text-destructive" role="alert">
-            {t("settings:mcpSelectionSaveFailed")}
-          </p>
-        )}
+        <MCPSelectionSaveFeedback error={editor.saveError} reload={editor.reload} />
       </CollapsibleContent>
     </Collapsible>
   );

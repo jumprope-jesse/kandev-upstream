@@ -1079,5 +1079,7 @@
   "mcpUsageDescription": "アクセス可能な保存済みの選択です。継承された使用状況と接続状態はセッションに表示されます。",
   "mcpManageCatalog": "ワークスペースのカタログを管理",
   "mcpLegacyRecoveryDescription": "このワークスペースの旧設定のインポートは確認されていません。既存のグローバルプロファイル設定が引き続き適用される場合があります。ワークスペースの選択とグローバルな旧設定は個別に保存されます。",
-  "mcpLegacyRecovery": "グローバルプロファイルの旧設定"
+  "mcpLegacyRecovery": "グローバルプロファイルの旧設定",
+  "mcpSelectionConflict": "選択内容が変更されました。選択内容を再読み込みして下書きを確認し、もう一度保存してください。",
+  "mcpReloadChoices": "選択内容を再読み込み"
 }

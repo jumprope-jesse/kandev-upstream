@@ -1015,6 +1015,13 @@ is idle. Providers without safe reconnection apply saved changes when the agent
 starts again. The state notice tells you which timing applies. If reconnect
 fails, the previous applied selection remains active and the UI offers retry.
 
+If another editor changes the saved choices, Kandev rejects your stale save.
+Choose **Reload choices**, review your retained draft against the latest saved
+choices, then save again. A save whose response is lost also requires a reload
+before another attempt. Repository and profile editors use **Save changes**;
+session Customize saves after an explicit selection change. Application retry
+remains available for a saved session setup that failed to apply.
+
 For a saved global profile, **Workspace** selects the catalog context without
 changing your active workspace. If settings have unsaved changes, switching
 workspaces offers Save and leave, Discard and leave, or continued editing.

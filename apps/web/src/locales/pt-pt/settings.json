@@ -1079,5 +1079,7 @@
   "mcpUsageDescription": "Seleções guardadas a que tem acesso. A utilização herdada e o estado da ligação são apresentados na sessão.",
   "mcpManageCatalog": "Gerir catálogo do espaço de trabalho",
   "mcpLegacyRecoveryDescription": "A importação antiga não está confirmada para este espaço de trabalho. A configuração global existente do perfil pode continuar a aplicar-se. As seleções do espaço de trabalho e as definições globais antigas são guardadas separadamente.",
-  "mcpLegacyRecovery": "Configuração antiga do perfil global"
+  "mcpLegacyRecovery": "Configuração antiga do perfil global",
+  "mcpSelectionConflict": "As escolhas foram alteradas. Recarregue as escolhas, reveja o rascunho e volte a guardar.",
+  "mcpReloadChoices": "Recarregar escolhas"
 }

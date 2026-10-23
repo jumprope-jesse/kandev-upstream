@@ -1079,5 +1079,7 @@
   "mcpUsageDescription": "Saved selections you can access. Inherited use and connection status are shown in the session.",
   "mcpManageCatalog": "Manage workspace catalog",
   "mcpLegacyRecoveryDescription": "Legacy import is not confirmed for this workspace. Existing global profile configuration can still apply. Workspace selections and global legacy settings are saved separately.",
-  "mcpLegacyRecovery": "Global profile legacy configuration"
+  "mcpLegacyRecovery": "Global profile legacy configuration",
+  "mcpSelectionConflict": "Choices changed. Reload choices, review your draft, then save again.",
+  "mcpReloadChoices": "Reload choices"
 }
