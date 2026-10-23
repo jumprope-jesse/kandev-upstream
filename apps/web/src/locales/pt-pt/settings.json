@@ -1081,5 +1081,9 @@
   "mcpLegacyRecoveryDescription": "A importação antiga não está confirmada para este espaço de trabalho. A configuração global existente do perfil pode continuar a aplicar-se. As seleções do espaço de trabalho e as definições globais antigas são guardadas separadamente.",
   "mcpLegacyRecovery": "Configuração antiga do perfil global",
   "mcpSelectionConflict": "As escolhas foram alteradas. Recarregue as escolhas, reveja o rascunho e volte a guardar.",
-  "mcpReloadChoices": "Recarregar escolhas"
+  "mcpReloadChoices": "Recarregar escolhas",
+  "mcpRegistrationSavedTo": "Guardado em {{workspace}}",
+  "mcpRegistrationSavedOnly": "Este servidor está guardado. Não está selecionado para nenhum repositório, perfil ou sessão.",
+  "mcpRegistrationUncertain": "Não foi possível confirmar que o servidor foi guardado. Reveja os servidores configurados antes de adicionar outro.",
+  "mcpReviewSavedServers": "Rever servidores guardados"
 }

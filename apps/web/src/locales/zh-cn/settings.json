@@ -1081,5 +1081,9 @@
   "mcpLegacyRecoveryDescription": "尚未确认此工作区的旧配置导入。现有的全局配置文件设置仍可能生效。工作区选择和全局旧设置分别保存。",
   "mcpLegacyRecovery": "全局配置文件的旧配置",
   "mcpSelectionConflict": "选择已更改。请重新加载选择，检查草稿，然后再次保存。",
-  "mcpReloadChoices": "重新加载选择"
+  "mcpReloadChoices": "重新加载选择",
+  "mcpRegistrationSavedTo": "已保存到 {{workspace}}",
+  "mcpRegistrationSavedOnly": "此服务器已保存，但尚未为任何仓库、配置文件或会话选用。",
+  "mcpRegistrationUncertain": "无法确认是否保存成功。请先查看已配置的服务器，再添加其他服务器。",
+  "mcpReviewSavedServers": "查看已保存的服务器"
 }

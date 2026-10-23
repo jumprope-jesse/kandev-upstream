@@ -1081,5 +1081,9 @@
   "mcpLegacyRecoveryDescription": "尚未確認此工作區的舊設定匯入。現有的全域設定檔設定仍可能生效。工作區選擇和全域舊設定分別儲存。",
   "mcpLegacyRecovery": "全域設定檔的舊設定",
   "mcpSelectionConflict": "選擇已更改。請重新載入選擇，檢查草稿，然後再次儲存。",
-  "mcpReloadChoices": "重新載入選擇"
+  "mcpReloadChoices": "重新載入選擇",
+  "mcpRegistrationSavedTo": "已儲存到 {{workspace}}",
+  "mcpRegistrationSavedOnly": "此伺服器已儲存，但尚未為任何儲存庫、設定檔或工作階段選用。",
+  "mcpRegistrationUncertain": "無法確認是否儲存成功。請先檢視已設定的伺服器，再新增其他伺服器。",
+  "mcpReviewSavedServers": "檢視已儲存的伺服器"
 }

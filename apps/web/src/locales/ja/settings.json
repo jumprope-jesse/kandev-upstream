@@ -1081,5 +1081,9 @@
   "mcpLegacyRecoveryDescription": "このワークスペースの旧設定のインポートは確認されていません。既存のグローバルプロファイル設定が引き続き適用される場合があります。ワークスペースの選択とグローバルな旧設定は個別に保存されます。",
   "mcpLegacyRecovery": "グローバルプロファイルの旧設定",
   "mcpSelectionConflict": "選択内容が変更されました。選択内容を再読み込みして下書きを確認し、もう一度保存してください。",
-  "mcpReloadChoices": "選択内容を再読み込み"
+  "mcpReloadChoices": "選択内容を再読み込み",
+  "mcpRegistrationSavedTo": "{{workspace}} に保存しました",
+  "mcpRegistrationSavedOnly": "このサーバーは保存されています。リポジトリ、プロファイル、セッションではまだ選択されていません。",
+  "mcpRegistrationUncertain": "保存を確認できませんでした。別のサーバーを追加する前に、設定済みのサーバーを確認してください。",
+  "mcpReviewSavedServers": "保存済みサーバーを確認"
 }
