@@ -24,7 +24,8 @@ Implementation was explicitly authorized on 2026-10-23. Work orders 01 and 02 ar
 complete. Work order 03 is pending and requires the committed
 management navigation prerequisite. Parent PR #3293 was squash-merged as
 `0b81ae48d4e2c358f80ac489e39388dfd8d7e6ab`. The assignment branch was rebased
-onto that verified current-main tip on 2026-10-24.
+onto that verified current-main tip on 2026-10-24, then stacked onto the published
+management design branch for the authorized draft checkpoint below.
 
 ## Baseline and coordination
 
@@ -33,10 +34,52 @@ onto that verified current-main tip on 2026-10-24.
 - Own branch: `feature/clarify-mcp-assignme-mhh`.
 - Historical fetched parent: `feature/plan-workspace-mcp-c-dcc` at
   `193de56ba2597b335a97b1e5ab01d09340f22647`, verified 2026-10-22.
-- Current base: `main` at `0b81ae48d4e2c358f80ac489e39388dfd8d7e6ab`, verified
-  against the remote on 2026-10-24. A future assignment PR targets `main`.
-  No PR exists yet. No merge or remote history rewrite is authorized.
+- Current PR base: `feature/improve-mcp-manageme-mpe` at
+  `f7bbe6076477eebace8740a42adb206e7229e3e4`, verified against the remote on
+  2026-10-24. Its parent is main `cc687bdce96bc22fb8a9ca87abe571b8309d3125`.
+  Draft publication is authorized. No review handling, CI waiting, or merge.
   Do not mutate the parent or sibling workspace.
+
+### Draft publication stack, 2026-10-24
+
+The user authorized publishing all follow-ups as drafts through the coordinator.
+The stack is main -> management -> assignment -> exclusions. Management's
+six-file design commit does not implement task 02 navigation. WO03 remains
+pending; this checkpoint publishes WO01/WO02 and records the incomplete scope.
+
+Backup `backup/clarify-mcp-assignment-pre-stack-20261024` preserves old assignment
+tip `9c9abfb13b351ced2869185eb1e730f682e30637`. Only the four assignment commits
+after `0b81ae48d4e2c358f80ac489e39388dfd8d7e6ab` were replayed onto the verified
+management head. No conflicts occurred; all four patches are identical under
+`git range-diff`. Incoming changes do not overlap assignment-owned files.
+
+| Work | Previous commit | Stacked commit |
+| --- | --- | --- |
+| WO01 conditional writes | `23a403dc2224a668e7f35c60ff5892952608fd3b` | `055da90bc66b7cdbfce358c9b94f798b7fc8b661` |
+| WO02 saved registration | `6bad3f57f3445fd5cd46dfa0bd5d1313543a49f4` | `c6423514b5f52fb5851a5ca7744004ec75e48443` |
+| Native cancellation fixture | `c49beff601fa0ce0d324efdccb1b1bb205e7c49c` | `d44e77e7157a019f2dbb553a12a6dcaad56a97ce` |
+| Main rebase record | `9c9abfb13b351ced2869185eb1e730f682e30637` | `27f8d626548b28c0312f9d68840c6ac714baa0e6` |
+
+Exclusions has already integrated the earlier assignment tip. Its subsequent
+publication rebase must use OLD `9c9abfb13b351ced2869185eb1e730f682e30637` as
+the cut point. This supersedes the earlier WO01-only boundary for that next
+operation. No exclusions branch or workspace was changed here.
+
+Fresh synthetic desktop and phone captures show saved registration, uncertain
+save recovery, and conditional-write conflict recovery. Temporary capture specs
+were removed. Assets are ignored, inspected, compressed, and recorded in the
+local PR manifest. The incoming global CSS change targets walkthrough drawers
+only and does not alter these captured settings surfaces.
+
+Post-stack validation passed: the four-package `MCP|Selection|Effective` Go race
+selector, 45 frontend tests across eight files, web typecheck, documentation
+catalog/spec/public-doc checks, whitespace, and three desktop plus three phone
+assignment E2E cases with retries disabled. Earlier real PostgreSQL concurrency,
+Go lint, and localization results remain applicable to unchanged source; they
+were not rerun for this second, conflict-free rebase. Mock fixtures do not certify
+real provider connectivity. No CI or automated review waiting/handling is part
+of this publication request. The final publication SHA and URL are recorded in
+the saved task plan and coordinating handoff after the push and draft creation.
 
 ### Main rebase, 2026-10-24
 
