@@ -418,3 +418,57 @@ Rebase validation:
 Existing work-order results above remain historical evidence. Rebase validation
 does not establish live-provider health. Planned PR base remains
 `feature/clarify-mcp-assignme-mhh`. No push or merge is authorized by this step.
+
+
+## Draft publication stack: 2026-10-24
+
+The coordinator relayed the user's updated publication request: all four MCP
+follow-ups publish draft checkpoints, without CI/review waiting or handling.
+The current stack is main -> `feature/improve-mcp-manageme-mpe` ->
+`feature/clarify-mcp-assignme-mhh` -> `feature/allow-session-only-i-2gn`.
+The exclusions PR targets assignment, not main. Management remains a design
+checkpoint; assignment WO03 still awaits management navigation. This draft does
+not claim those sibling work orders are complete. Exclusions WO01/02/03 are
+implemented and retain their completed results.
+
+Verified remote assignment head:
+`6faaa61b817dc9dddc60d2c12026cc1273748a13` (draft PR #4760), on management
+`f7bbe6076477eebace8740a42adb206e7229e3e4` (draft PR #4759).
+Backup `backup/exclusions-pre-publication-stack-20261024` preserves
+`70bc5b29ee07cec8dae3db5e792f2826e864be3a`. Replayed only exclusions-owned
+commits after OLD assignment cut point `9c9abfb13b351ced2869185eb1e730f682e30637`
+onto the new assignment head. No conflicts occurred; range-diff shows all three
+patches unchanged:
+
+- `3c88cd7fa833e0a94c6ba28186ce90f1a613c557` ->
+  `8deeb1d125fa8b5ad91be7568b1317c42162af77`.
+- `b2670fffad2b8c0566d299ce41a167bd78fcaaac` ->
+  `8822bfaf2f0c4320ce26b4d6fddb29ef1fe81236`.
+- `70bc5b29ee07cec8dae3db5e792f2826e864be3a` ->
+  `20b498ed916c99ecfa35af14aab82d8170ef0c4d`.
+
+Committed-positive-ID comparisons, exclusion-preserving conditional writes, and
+neighbor E2E helper corrections are unchanged. No sibling branch was mutated.
+The manual test instance at port 48671 was shut down at the user's request;
+the main instance at port 9998 was untouched.
+
+Post-stack validation:
+
+- `go test -trimpath -race ./internal/agent/mcpconfig ./internal/agent/settings/store ./internal/agent/settings/handlers ./internal/backendapp -run 'MCP|Selection|Effective' -count=1`: passed.
+- Actual disposable PostgreSQL 17.11 selection/exclusion concurrency,
+  resolution, import/deletion, and cleanup checks under race detection: passed.
+- Ten focused frontend suites: 68 tests passed. Typecheck and i18n checks passed.
+- Fresh managed desktop build and regressions, including desktop/phone screenshot
+  capture: 14 passed (`/tmp/kandev-run.e2e.0hXF3dVv.log`). Capture assets were
+  inspected and compressed. The temporary capture spec was removed.
+- Phone regressions passed: 9 cases, sequentially against the same build
+  (`/tmp/kandev-run.e2e.M7qzBerK.log`).
+- Documentation catalog (403 decisions, 1738 specifications), full spec lint,
+  and whitespace checks passed.
+
+Unchanged-source lifecycle, SQLguard, store-conformance, lint, and localization
+ratchet receipts remain recorded in the earlier work-order results; those broad
+checks were not repeated solely for this conflict-free rebase. Mock fixtures do
+not establish live-provider health. The final remote SHA and draft URL are
+recorded in the saved task plan and coordinator handoff after publication.
+No CI watcher, reviewer request, auto-merge, or merge is part of this checkpoint.
