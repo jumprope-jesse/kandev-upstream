@@ -64,7 +64,9 @@ owner-reader callback wired in `internal/backendapp`, beside
 `mcpSelectionOwnerValidator`. That callback reads authoritative profile,
 repository, task, and session records and checks the current caller's access.
 Reuse `AuthorizeWorkspaceAccess` and the resource services used by the existing
-owner validators. Do not infer access from a browser inventory or an owner ID.
+owner validators. Profile projection reads only name, agent identity, enabled
+state, and workspace membership; it does not load legacy configuration or run
+profile backfill. Do not infer access from a browser inventory or an owner ID.
 
 Proposed response:
 
@@ -103,7 +105,9 @@ silently treated as permission denial. A failed refresh keeps the last snapshot
 with a stale indication. Access denial clears it immediately.
 
 The projection is a current read, not an atomic snapshot across task/settings
-stores. Dedupe paged results by scope and owner. An explicit refresh restarts
+stores. Cursor encryption keys live for the backend process; after a restart,
+an invalid cursor requires a fresh usage read. No persistent key or owner
+snapshot is added. Dedupe paged results by scope and owner. An explicit refresh restarts
 pagination so renames, deletions, and new associations converge. No database
 transaction remains open during cross-service reads. Existing guarded delete
 counts remain deletion semantics, not an authorization oracle for the new view.

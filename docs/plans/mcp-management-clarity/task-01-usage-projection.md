@@ -1,7 +1,7 @@
 ---
 id: "01-usage-projection"
 title: "Authorized catalog usage projection"
-status: pending
+status: done
 wave: 1
 depends_on: []
 plan: "plan.md"
@@ -60,7 +60,7 @@ new `CatalogUsage`/`MCPCatalogUsage` tests in the owned files.
 (cd apps/backend && go test -trimpath ./internal/agent/mcpconfig ./internal/agent/settings/store ./internal/agent/settings/handlers -run 'Test.*(Selection|MCPCatalog)' -count=1)
 (cd apps/web && pnpm exec vitest run lib/api/domains/mcp-api.test.ts)
 (cd apps/web && pnpm run typecheck)
-bash scripts/lint-go-changed apps/backend/internal/agent/mcpconfig/catalog_usage.go apps/backend/internal/agent/mcpconfig/catalog_usage_test.go apps/backend/internal/agent/settings/store/mcp_usage.go apps/backend/internal/agent/settings/store/mcp_usage_test.go apps/backend/internal/agent/settings/handlers/mcp_catalog_usage_handlers.go apps/backend/internal/agent/settings/handlers/mcp_catalog_usage_handlers_test.go apps/backend/internal/agent/settings/handlers/handlers.go apps/backend/internal/backendapp/mcp_usage.go apps/backend/internal/backendapp/mcp_usage_test.go apps/backend/internal/backendapp/helpers.go
+bash scripts/lint-go-changed apps/backend/internal/agent/mcpconfig/catalog_usage.go apps/backend/internal/agent/mcpconfig/catalog_usage_test.go apps/backend/internal/agent/mcpconfig/catalog_usage_cursor.go apps/backend/internal/agent/mcpconfig/selections.go apps/backend/internal/agent/settings/store/mcp_usage.go apps/backend/internal/agent/settings/store/mcp_usage_test.go apps/backend/internal/agent/settings/handlers/mcp_catalog_usage_handlers.go apps/backend/internal/agent/settings/handlers/mcp_catalog_usage_handlers_test.go apps/backend/internal/agent/settings/handlers/handlers.go apps/backend/internal/backendapp/mcp_usage.go apps/backend/internal/backendapp/mcp_usage_test.go apps/backend/internal/backendapp/helpers.go
 git diff --check
 ```
 
@@ -77,7 +77,9 @@ the actual changed Go files before recording results. Do not run broad suites.
 
 ## Files likely touched
 
-- `apps/backend/internal/agent/mcpconfig/catalog_usage.go` and `_test.go` (new).
+- `apps/backend/internal/agent/mcpconfig/catalog_usage.go`,
+  `catalog_usage_cursor.go`, and `catalog_usage_test.go` (new), with service
+  owner-reader wiring in `selections.go`.
 - `apps/backend/internal/agent/settings/store/mcp_usage.go`, `mcp_usage_test.go`
   (new), using `mcp_selections.go` and `postgres_mcp_consistency_test.go` patterns.
 - `apps/backend/internal/agent/settings/handlers/mcp_catalog_usage_handlers.go`
@@ -112,4 +114,32 @@ stable dataset. Deletion impact remains separate from visible usage totals.
 
 ## Results
 
-Pending. No implementation tests ran during design.
+Completed 2026-10-25. Added the bounded usage read, encrypted process-local
+cursor, metadata-only profile lookup, authorized task/repository/session owner
+projection, HTTP handler, and typed frontend client. No selection writes,
+imports, materialization, or provider calls were added.
+
+Validation:
+
+- RED: missing route returned 404; missing service/store projection failed the
+  new usage assertions; owner reader failed names/error propagation; client
+  failed its missing exported transport contract.
+- GREEN: `go test -trimpath -race ./internal/agent/mcpconfig
+  ./internal/agent/settings/store ./internal/agent/settings/handlers
+  ./internal/backendapp -run 'Test.*(CatalogUsage|MCPCatalogUsage)' -count=1`
+  passed with an isolated PostgreSQL 17 fixture, including metadata projection.
+- Existing `Selection|MCPCatalog` regressions in mcpconfig, store, and handlers
+  passed. Frontend `lib/api/domains/mcp-api.test.ts`: 2 passed.
+- `NODE_OPTIONS=--max-old-space-size=8192 pnpm run typecheck`: passed. The initial
+  default 4 GB Node heap run failed from heap exhaustion, not a type diagnostic.
+- ESLint and Prettier for the client, client tests, and HTTP types: passed.
+- Affected Go packages: zero lint issues. The standard script initially lacked
+  golangci-lint in PATH and then encountered a shared-host lock. The same package
+  and base check passed with the installed binary, two workers, 3 GiB memory
+  target, and `--allow-parallel-runners`; no hook or lint rule was bypassed.
+- Documentation catalog/spec lint and actual changed-file PR coverage passed.
+  Coverage status: covered, zero errors. `git diff --check` passed.
+
+No UI was implemented in this work order. Navigation and rendered evidence
+remain task 02. PostgreSQL fixtures used task-owned temporary directories and
+Unix sockets and were shut down after the checks.

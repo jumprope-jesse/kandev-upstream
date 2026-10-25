@@ -1,6 +1,6 @@
 ---
 created: 2026-10-22
-status: draft
+status: in_progress
 requirements:
   - REQ-AGENTS-MCP-MANAGEMENT-001
   - REQ-AGENTS-MCP-MANAGEMENT-002
@@ -220,7 +220,7 @@ each work order. Install dependencies once from `apps/` before package commands.
 
 ## Work orders
 
-- [ ] [Task 01: Authorized usage projection](task-01-usage-projection.md)
+- [x] [Task 01: Authorized usage projection](task-01-usage-projection.md)
 - [ ] [Task 02: Management navigation](task-02-management-navigation.md), after 01
 - [ ] [Task 03: Neutral evidence](task-03-neutral-evidence.md), after 02
 
@@ -271,3 +271,11 @@ Draft-publication validation on 2026-10-24, after reconciliation onto main:
 No material product decision remains open in this draft. The proposed query
 entry is a local interface choice communicated to the coordinator, not an
 assertion that the destination already exists.
+
+## Implementation progress, 2026-10-25
+
+The user requested implementation after the published design handoff. Task 01
+is complete; its work order records RED/GREEN and final affected checks. Task 02
+is now in progress. Task 03 remains pending. The published PR remains draft;
+no review handling or merge is authorized. The design-only statements above
+record the earlier publication checkpoint, not the current local worktree.

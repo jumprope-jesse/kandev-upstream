@@ -1,5 +1,6 @@
 import { fetchJson, type ApiRequestOptions } from "../client";
 import type {
+  MCPCatalogUsagePage,
   MCPDefinitionInput,
   MCPDefinitionPatch,
   MCPMarketplaceEntry,
@@ -151,4 +152,19 @@ export async function replaceMCPSelections(
       body: JSON.stringify({ workspace_id: workspaceId, definition_ids: definitionIds }),
     },
   });
+}
+
+export async function listMCPUsage(
+  workspaceId: string,
+  definitionId: string,
+  cursor?: string,
+  options?: ApiRequestOptions,
+): Promise<MCPCatalogUsagePage> {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  const suffix = params.size ? `?${params.toString()}` : "";
+  return fetchJson<MCPCatalogUsagePage>(
+    `${workspacePath(workspaceId)}/mcp-servers/${encodeURIComponent(definitionId)}/usage${suffix}`,
+    { ...options, cache: "no-store" },
+  );
 }

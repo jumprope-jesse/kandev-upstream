@@ -175,6 +175,7 @@ func (h *Handlers) registerHTTP(router *gin.Engine) {
 	api.GET("/workspaces/:id/mcp-servers", h.httpListMCPCatalog)
 	api.POST("/workspaces/:id/mcp-servers", h.interlock, h.httpCreateMCPCatalog)
 	api.GET("/workspaces/:id/mcp-servers/:serverID", h.httpGetMCPCatalog)
+	api.GET("/workspaces/:id/mcp-servers/:serverID/usage", h.httpMCPCatalogUsage)
 	api.PATCH("/workspaces/:id/mcp-servers/:serverID", h.interlock, h.httpUpdateMCPCatalog)
 	api.DELETE("/workspaces/:id/mcp-servers/:serverID", h.interlock, h.httpDeleteMCPCatalog)
 	api.GET("/mcp-marketplace", h.httpSearchMCPMarketplace)

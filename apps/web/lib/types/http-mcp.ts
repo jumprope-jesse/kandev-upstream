@@ -203,3 +203,29 @@ export type MCPResolutionSummary = {
   runtime_name?: string;
   origins?: MCPSelectionOrigin[];
 };
+
+export type MCPOwnerUsageDestination = {
+  kind: MCPSelectionScope;
+  workspace_id: string;
+  owner_id: string;
+  agent_id?: string;
+  task_id?: string;
+};
+
+export type MCPOwnerUsage = {
+  scope: MCPSelectionScope;
+  owner_id: string;
+  workspace_id: string;
+  display_name?: string;
+  agent_id?: string;
+  task_id?: string;
+  owner_state: "available" | "disabled" | "archived";
+  destination: MCPOwnerUsageDestination | null;
+};
+
+export type MCPCatalogUsagePage = {
+  workspace_id: string;
+  definition_id: string;
+  items: MCPOwnerUsage[];
+  next_cursor?: string;
+};
