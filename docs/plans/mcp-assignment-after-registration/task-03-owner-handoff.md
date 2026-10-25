@@ -179,8 +179,39 @@ being mistaken for runtime success.
 
 ## Results
 
-Pending. On 2026-10-23, management's plan remained at
+Incomplete. On 2026-10-23, management's plan remained at
 `40b577c3-0d95-43b5-9a57-ae8af8ee149b` (2026-10-22 11:09), with design only
 and no committed navigation prerequisite. Work orders 01 and 02 are complete.
-No owner-handoff code or tests have been added. Resume after integrating the
-committed management task 02 result and reconciling its exact typed contract.
+No owner-handoff UI has been added. Resume integration after the committed
+management task 02 result is published and reconcile its exact typed contract.
+
+On 2026-10-25, the coordinator authorized independent preparation while management
+task 02 is in progress. The standalone `lib/mcp/assignment-hint.ts` helper now
+parses, appends, removes, and resolves the focus-only hint without constructing
+owner routes or changing UI state. Its 15 tests passed after an initial RED for
+the absent module; focused ESLint passed. Cases cover duplicate/malformed hints,
+query/hash preservation, wrong-workspace/disabled/removed/filtered-out rows,
+inventory readiness, and explicit session surface opening. Destination lifecycle
+and rendered behavior remain to be integrated and tested; no completion is claimed.
+
+Prepared bounded task discovery in `use-mcp-assignment-tasks.ts`: explicit pages
+of 25, no read before task choice is active, workspace and eligibility filtering,
+generic failure and read-only retry, and request-generation cancellation on
+query/context changes, close, and unmount. All six focused tests passed after RED;
+focused ESLint passed. The hook is not yet mounted in the chooser.
+
+Profile discovery investigation found that `/agents` intentionally omits
+workspace-owned profiles. Despite its frontend `listAgentProfiles` name, the
+Office endpoint returns AgentInstance records, so it is not an authoritative
+settings-profile inventory. This correction was relayed to management for its
+destination admission contract. Await the committed authorized profile read
+contract; do not infer profile identity or enabled state from Office instances.
+No broader inventory or new endpoint was introduced. Requested the exclusions
+sibling's minimal committed saved-ID comparison correction for independent
+delivery, without adopting its full branch.
+
+Before the next dependency rebase, preserve the current published assignment tip
+`6faaa61b817dc9dddc60d2c12026cc1273748a13`, all local preparation, and old management
+base `f7bbe6076477eebace8740a42adb206e7229e3e4`. Consume only an exact verified
+published management prerequisite. Keep PR #4760 draft; no CI waiting or review
+handling is authorized.
