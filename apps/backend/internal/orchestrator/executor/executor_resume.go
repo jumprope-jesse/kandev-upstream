@@ -2631,12 +2631,8 @@ func (e *Executor) applyResumeRepoConfig(
 	if baseBranch != "" && e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType) {
 		req.BaseBranch = baseBranch
 	}
-	// The initial launch keyed the environment inventory on the checkout
-	// branch (topLevelBranchIdentitySlug prefers CheckoutBranch), but this path
-	// only stamps BaseBranch for clone-URL executors. Without the checkout
-	// identity, a task created with a working branch different from its base
-	// fails every resume with ErrWorkspaceReuseUnsafe. Carry the identity only:
-	// CheckoutBranch itself stays unset so nothing is re-fetched or re-checked out.
+	// Clone-URL resumes carry checkout-branch identity without requesting
+	// another checkout.
 	if req.BranchIdentitySlug == "" && e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType) {
 		req.BranchIdentitySlug = resumeCheckoutBranchIdentity(repositoryID, allRepos)
 	}
