@@ -553,3 +553,54 @@ this run, compressed, and visually inspected. The disposable capture spec was
 removed. The images show the final integrated source; later changes are this
 verification record only. The full hook receipt and final remote SHA are recorded
 in the saved task plan and coordinator handoff after publication.
+
+
+## Inline profile dependency integration: 2026-10-25
+
+Verified assignment remote `f3be6a5186f43dcce4487371c7a493be6c9ec280`, containing
+management `7aca966a6ec262eb1ce839fa883f66e23441d477`. This dependency update
+makes profile choices inline and adapts the assignment focus hint. The session
+still requires an explicit Customize action. No new exclusion scope was added.
+
+Preserved the clean published exclusions tip
+`9d5a5250c9b8a0eca92842f61fce0a32071f0124` as
+`backup/exclusions-pre-inline-profile-20261025`. Replayed only own commits after
+OLD assignment `fe08307e9f4701715e9fc906b1d65916c18971e1` onto the new tip.
+No conflicts occurred; range-diff marks all five patches identical:
+
+- `ecf6743c2a664ce436fd667bbab74b2e5d33912d` ->
+  `8f67dd5a3f833fef7c6e3c78bac22d0226a62f6e`.
+- `80f0ba5f04d08c8e8427ce3a9915f9f28a8e9bab` ->
+  `f463e7ae99f7c995d0d80a51ab0a07c8c3cf16dc`.
+- `64411a07c0de2f19dbcda1e6c315f6be8461e1d9` ->
+  `8a107656e3e1e01534b1b51467075aae32850e83`.
+- `d7c38c3df8c1fa24917ac47d683fd04e6ea9cd18` ->
+  `2db5889451b5b5afd781b531277ba77d8f30138e`.
+- `9d5a5250c9b8a0eca92842f61fce0a32071f0124` ->
+  `2925ed62fd7e7eabd68d0bebe986cde1ac34cdfe`.
+
+The backend, session hook/selector, and explorer source are byte-identical to
+the previous verified publication. Existing race/PostgreSQL/lifecycle receipts
+remain applicable; they were not rerun for this frontend-only dependency update.
+The shared picker change removes an obsolete reveal effect from its wrapper;
+the session uses the unchanged content component. Current exclusions screenshots
+still show the unchanged surface. Profile UI evidence belongs to the prerequisite
+PRs; no unrelated profile screenshot replaces the exclusions evidence.
+
+Focused integration validation:
+
+- Six frontend suites passed, 29 tests: shared picker, exclusion component,
+  session hook, assignment focus, settings draft, and profile configuration.
+- Full web typecheck passed. Specification catalog and full spec lint passed.
+- Fresh managed desktop build and four relevant browser journeys passed with
+  one worker and retries disabled (`/tmp/kandev-run.e2e.Md4DCfB7.log`): exclusion
+  restore, global profile assignment, workspace-owned profile assignment, and
+  explicit session Customize handoff.
+
+- The same four journeys passed on phone, sequentially against that fresh build,
+  with one worker and retries disabled (`/tmp/kandev-run.e2e.F0XVo080.log`).
+
+Only this integration record was added after checks. Normal hook receipt and
+final local/remote/PR SHA are recorded in the saved task plan and coordinator
+handoff. PR #4761 remains draft on assignment. No CI/review handling, merge,
+sibling edits, new agents, or runtime changes are part of this update.
