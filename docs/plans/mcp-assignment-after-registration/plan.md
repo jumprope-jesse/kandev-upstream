@@ -35,7 +35,7 @@ management design branch for the authorized draft checkpoint below.
 - Historical fetched parent: `feature/plan-workspace-mcp-c-dcc` at
   `193de56ba2597b335a97b1e5ab01d09340f22647`, verified 2026-10-22.
 - Current PR base: `feature/improve-mcp-manageme-mpe` at
-  `45e90466378f982e13cc762c52432f14ab43c32c`, verified against the remote on
+  `7aca966a6ec262eb1ce839fa883f66e23441d477`, verified against the remote on
   2026-10-25. Its parent is main `cc687bdce96bc22fb8a9ca87abe571b8309d3125`.
   Draft publication is authorized. No review handling, CI waiting, or merge.
   Do not mutate the parent or sibling workspace.
@@ -396,3 +396,17 @@ certify live third-party endpoints. PR #4760 stays draft. Publication does not
 authorize CI waiting, review handling, auto-merge, or merge. Exclusions must
 preserve its old assignment boundary `6faaa61b817dc9dddc60d2c12026cc1273748a13`
 and consume the verified new remote tip after publication.
+
+
+## Inline profile integration, 2026-10-25
+
+Management published the user-requested inline profile selector cleanup at
+`7aca966a6ec262eb1ce839fa883f66e23441d477`. Backup
+`backup/clarify-mcp-assignment-before-inline-profile-20261025` preserves assignment
+`fe08307e9f4701715e9fc906b1d65916c18971e1`, the next exclusions replay boundary.
+Only the eight assignment commits after old management `45e904663` were replayed.
+The sole conflict was profile-card composition: keep management's inline
+MCPSelectionContent and workspace-keyed search, attach assignment's existing
+focus-only props directly, and remove the obsolete picker opener/reveal prop.
+No backend, selection-write, authorization or provider timing contract changes.
+Affected validation and fresh profile evidence are recorded in WO03.

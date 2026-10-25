@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useId, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useMCPAssignmentFocus } from "@/hooks/domains/workspace/use-mcp-assignment-focus";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
@@ -33,7 +33,6 @@ export type { MCPInheritedSelection } from "@/lib/types/http-mcp";
 
 type MCPSelectionPickerProps = {
   assignment?: { ownerKey: string; active: boolean; ready: boolean };
-  reveal?: boolean;
   workspaceId?: string | null;
   definitions: MCPServerDefinition[];
   selectedIds: string[];
@@ -359,7 +358,6 @@ function ServerChoices({
 
 export function MCPSelectionPicker({
   assignment,
-  reveal,
   workspaceId,
   definitions,
   selectedIds,
@@ -376,9 +374,6 @@ export function MCPSelectionPicker({
   const { isMobile } = useResponsiveBreakpoint();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  useEffect(() => {
-    if (reveal) setOpen(true);
-  }, [reveal]);
   const title = label ?? t("settings:mcpServers");
   const pickerBody = (
     <MCPSelectionContent

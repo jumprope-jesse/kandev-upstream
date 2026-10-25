@@ -73,7 +73,8 @@ function ProfileMCPSelectionContent({
         assignment={{
           ownerKey: profileId,
           active: !workspaceRequired,
-          ready: !definitions.loading && !editor.loading && !hasLoadError,
+          ready:
+            Boolean(editor.selection) && !definitions.loading && !editor.loading && !hasLoadError,
         }}
         workspaceId={selectedWorkspaceId ?? undefined}
         definitions={definitions.definitions}

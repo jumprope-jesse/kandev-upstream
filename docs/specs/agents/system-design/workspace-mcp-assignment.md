@@ -18,6 +18,12 @@ published at `45e90466378f982e13cc762c52432f14ab43c32c`, including authorized
 workspace-profile destination admission. Earlier design-only blockers are
 historical; the route and metadata contracts are integrated.
 
+Profile presentation follows management cleanup `7aca966a6ec262eb1ce839fa883f66e23441d477`:
+one inline searchable checkbox section on desktop and phone, with no nested
+picker opener or Manage workspace catalog link. The owner-context focus hint
+attaches directly to the inline content. It still changes no checkbox/search/save
+state; the shared Save changes action retains persistence ownership.
+
 This design extends [workspace MCP configuration](workspace-mcp-configuration.md)
 and [setup delivery](workspace-mcp-resolution-delivery.md). Agents retains
 definition, selection, and runtime authority. The settings coordinator retains

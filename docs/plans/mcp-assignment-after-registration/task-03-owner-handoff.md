@@ -309,3 +309,43 @@ ESLint then passed; the session selection hook and real chat consumer passed all
 17 focused tests (`/tmp/assignment-wo03-session-hook-final.log`). Existing captures
 remain valid because this refactor changes no rendered behavior. No hook bypass
 was used. The historical verification command now names the actual hint test.
+
+
+### Follow-up: inline profile composition, 2026-10-25
+
+Integrated verified management `7aca966a6ec262eb1ce839fa883f66e23441d477` by
+rebasing only assignment commits from old base `45e904663`. Backup
+`backup/clarify-mcp-assignment-before-inline-profile-20261025` preserves old
+published assignment `fe08307e9f4701715e9fc906b1d65916c18971e1` for exclusions.
+Management owns the inline searchable profile list and removal of its redundant
+opener/description/catalog link. Assignment passes the focus hint directly to
+MCPSelectionContent; the old automatic opener prop is removed. Phone tests no
+longer dismiss a picker sheet before using the shared Save changes action.
+
+The first integrated browser run exposed a real readiness regression: both
+assignment profile paths lost the highlight because loading starts in an effect
+and the inline content could consume the hint before an accepted selection
+existed (`/tmp/kandev-run.e2e.VOLemtu9.log`: two failures, two management passes).
+The focus readiness guard now requires `editor.selection` as well as settled
+loading and no load error. This leaves the hint pending until the owner snapshot
+is ready. Existing E2E tests are the primary integration regression; no new
+production test seam is needed.
+
+After the guard: 36 focused tests across assignment focus/discovery/hint and
+settings-draft suites pass; strict changed-file ESLint and full web typecheck
+pass. Four affected Chromium profile journeys pass with zero retries
+(`/tmp/kandev-run.e2e.rrFe5buX.log`), including global/workspace-owned assignment,
+manual save/workspace switching, and authorized cold profile admission. Browser
+captures now cover the unchecked highlighted row directly in the inline editor.
+Backend and non-profile runtime behavior are unchanged from the prior verified
+head; no duplicate broad backend or browser suite is required for this UI-only
+integration. Spec catalog/lint and public docs checks pass.
+
+
+Final phone validation passed the same four profile journeys, zero retries
+(`/tmp/kandev-run.e2e.qFEMrqEz.log`), using the unchanged freshly built desktop
+source. Global/workspace profile screenshots were captured on both viewports.
+The remaining assignment behavior and prior screenshots are unchanged. Full web
+typecheck and strict lint passed after the readiness correction; no temporary
+instrumentation or hook bypass is present. Current rebased WO01 is
+`778c9ebabeb039c60530c5935704e2dddf6892ab`.

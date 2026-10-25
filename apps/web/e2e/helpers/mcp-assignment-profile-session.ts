@@ -25,6 +25,25 @@ async function openChooser(page: Page, workspaceId: string, definitionId: string
   return page.getByTestId("mcp-assignment-chooser");
 }
 
+async function captureInlineProfile(page: Page, profileId: string, kind: string) {
+  const picker = page.getByTestId(`profile-mcp-selection-${profileId}`);
+  await expect(picker.getByRole("textbox", { name: "Search MCP servers" })).toHaveCount(1);
+  await expect(picker.getByRole("button", { name: "MCP servers", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Manage workspace catalog" })).toHaveCount(0);
+  const capture = new PrAssetCapture(
+    page,
+    page.viewportSize()!.width < 768 ? "mobile-mcp-assignment.spec.ts" : "mcp-assignment.spec.ts",
+    { captureKey: kind },
+  );
+  if (capture.capturing) {
+    await waitForFiniteAnimations(picker);
+    await capture.screenshot("inline", {
+      caption: "Profile assignment highlights an unchecked server in the inline editor",
+    });
+    capture.flush();
+  }
+}
+
 // @covers AC-AGENTS-MCP-ASSIGNMENT-002.2, AC-AGENTS-MCP-ASSIGNMENT-002.3, AC-AGENTS-MCP-ASSIGNMENT-004.2
 export async function checkAssignmentProfileHandoff(page: Page, api: ApiClient, seed: SeedData) {
   const { agents } = await api.listAgents();
@@ -67,14 +86,13 @@ export async function checkAssignmentProfileHandoff(page: Page, api: ApiClient, 
     await expect(row).toBeVisible();
     await expect(row).toHaveAttribute("data-mcp-highlighted", "true");
     await expect(row.getByRole("checkbox")).not.toBeChecked();
+    await captureInlineProfile(page, profile.id, "global-profile");
     expect(writes).toEqual([]);
     expect(
       (await api.getMCPSelections("profile", profile.id, seed.workspaceId)).definition_ids,
     ).toEqual(baseline.definition_ids);
     await row.getByRole("checkbox").click();
     expect(writes).toEqual([]);
-    // On phones, the profile's existing picker owns a sheet above the shared Save bar.
-    if (viewport.width < 768) await page.keyboard.press("Escape");
     await page
       .getByTestId("settings-floating-save")
       .getByRole("button", { name: "Save changes", exact: true })
@@ -219,6 +237,7 @@ export async function checkAssignmentWorkspaceProfile(page: Page, api: ApiClient
     const row = page.getByTestId(`mcp-choice-${definition.id}`);
     await expect(row).toHaveAttribute("data-mcp-highlighted", "true");
     await expect(row.getByRole("checkbox")).not.toBeChecked();
+    await captureInlineProfile(page, profileId, "workspace-profile");
     expect(
       (await api.getMCPSelections("profile", profileId, seed.workspaceId)).definition_ids,
     ).toEqual([]);
@@ -226,7 +245,6 @@ export async function checkAssignmentWorkspaceProfile(page: Page, api: ApiClient
     expect(
       (await api.getMCPSelections("profile", profileId, seed.workspaceId)).definition_ids,
     ).toEqual([]);
-    if (page.viewportSize()!.width < 768) await page.keyboard.press("Escape");
     await page
       .getByTestId("settings-floating-save")
       .getByRole("button", { name: "Save changes", exact: true })
