@@ -1,5 +1,7 @@
 "use client";
 
+import { useSearchParams } from "@/lib/routing/client-router";
+import { readMCPContextHint } from "@/lib/mcp/management-links";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@kandev/ui/badge";
@@ -25,6 +27,8 @@ import type {
 } from "@/lib/types/http-mcp";
 
 export type MCPSessionSelectorProps = {
+  assignmentSessionId?: string;
+  assignmentActive?: boolean;
   workspaceId?: string | null;
   definitions: MCPServerDefinition[];
   definitionsLoading?: boolean;
@@ -50,6 +54,8 @@ export function MCPSessionSelectionBody({
   ...props
 }: MCPSessionSelectorProps & { query: string; onQueryChange: (query: string) => void }) {
   const { t } = useTranslation();
+  const params = useSearchParams();
+  const routeSession = readMCPContextHint(params, "sessionId");
   const changes = mcpSelectionChanges(state, props.savedSelectedIds ?? props.selectedIds);
   return (
     <div className="min-w-0 space-y-5">
@@ -76,6 +82,17 @@ export function MCPSessionSelectionBody({
       ) : (
         <MCPSelectionContent
           {...props}
+          assignment={
+            props.assignmentSessionId
+              ? {
+                  ownerKey: props.assignmentSessionId,
+                  active: Boolean(
+                    props.assignmentActive && routeSession.value === props.assignmentSessionId,
+                  ),
+                  ready: !definitionsLoading && !props.error,
+                }
+              : undefined
+          }
           error={reload ? undefined : props.error}
           sessionPresentation
           renderServerAnnotation={(id) => {
@@ -104,7 +121,13 @@ export function MCPSessionSelector({
     if (isMobile && handledError) setOpen(false);
   }, [isMobile, handledError]);
   const body = (
-    <MCPSessionSelectionBody {...props} testId={testId} query={query} onQueryChange={setQuery} />
+    <MCPSessionSelectionBody
+      {...props}
+      assignmentActive={open}
+      testId={testId}
+      query={query}
+      onQueryChange={setQuery}
+    />
   );
   const trigger = (
     <Button

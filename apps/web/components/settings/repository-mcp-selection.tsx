@@ -87,6 +87,15 @@ export function RepositoryMCPSelectionSection({
               {t("settings:mcpRepositorySelectionDescription")}
             </p>
             <MCPSelectionContent
+              assignment={{
+                ownerKey: repositoryId,
+                active: open && hint.value === repositoryId,
+                ready:
+                  !definitions.loading &&
+                  !editor.loading &&
+                  !definitions.error &&
+                  !editor.loadError,
+              }}
               workspaceId={workspaceId}
               definitions={definitions.definitions}
               selectedIds={selectedIds}

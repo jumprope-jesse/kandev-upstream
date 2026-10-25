@@ -1,7 +1,7 @@
 ---
 id: "03-owner-handoff"
 title: "Connect optional MCP assignment to existing owner editors"
-status: pending
+status: completed
 wave: 3
 depends_on:
   - "02-registration-completion"
@@ -93,7 +93,7 @@ Run TDD before implementation. From root, after work orders 01/02 and the
 committed sibling prerequisite are integrated:
 
 ```bash
-(cd apps/web && pnpm exec vitest run hooks/domains/workspace/use-mcp-registration-completion.test.ts hooks/domains/workspace/use-mcp-assignment-targets.test.ts components/mcp/mcp-assignment-navigation.test.ts hooks/domains/workspace/use-mcp-selection-editor.test.ts hooks/domains/workspace/use-mcp-selection-editor-context.test.ts)
+(cd apps/web && pnpm exec vitest run hooks/domains/workspace/use-mcp-registration-completion.test.ts hooks/domains/workspace/use-mcp-assignment-targets.test.ts lib/mcp/assignment-hint.test.ts hooks/domains/workspace/use-mcp-selection-editor.test.ts hooks/domains/workspace/use-mcp-selection-editor-context.test.ts)
 (cd apps/web && pnpm run typecheck)
 (cd apps/web && pnpm run i18n:check)
 (cd apps/web && pnpm e2e:run --project chromium tests/settings/mcp-assignment.spec.ts)
@@ -117,7 +117,7 @@ No real-provider certification is claimed by these tests.
 - `apps/web/components/settings/workspaces/mcp-settings.tsx` and completion component.
 - New `mcp-assignment-chooser.tsx` and domain hook
   `hooks/domains/workspace/use-mcp-assignment-targets.ts`, with focused tests.
-- `apps/web/components/mcp/mcp-assignment-navigation.test.ts` against the
+- `apps/web/lib/mcp/assignment-hint.test.ts` against the
   sibling's committed destination builder. Modify the builder only by the
   reviewed integration contract, not by copying a competing implementation.
 - Existing repository/profile destination consumers and composer Customize
@@ -215,3 +215,97 @@ Before the next dependency rebase, preserve the current published assignment tip
 base `f7bbe6076477eebace8740a42adb206e7229e3e4`. Consume only an exact verified
 published management prerequisite. Keep PR #4760 draft; no CI waiting or review
 handling is authorized.
+
+
+### Implementation checkpoint, 2026-10-25
+
+The historical dependency blockers above are resolved by published management
+`45e90466378f982e13cc762c52432f14ab43c32c`. The chooser consumes
+`mcpOwnerDestinationHref` and `listMCPProfileOwners`; it does not build another
+management surface. Global and exact-workspace profiles are filtered by enabled,
+concrete and MCP-supported metadata. Task discovery stays at 25 rows per page;
+sessions are read only after one task is selected. Every open revalidates the
+owner and enabled definition. Failed reads preserve the saved catalog identity.
+
+Desktop uses a bounded dialog. Phone uses an inset bottom drawer with a fixed
+header/footer, one scrolling body, safe-area padding, and 44px or larger touch
+actions. Domain state is above responsive wrappers and survives resize. Both
+registration receipts and cards offer Use in; Done is still complete registration.
+Scope review precedes navigation. Settings retain shared Save changes; session
+navigation does not open Customize and explicit checkbox changes keep autosave.
+
+Focus-only mcpServerId processing is scoped to the validated owner and existing
+visible picker inventory. It waits for readiness and explicit session opening,
+consumes duplicate/invalid/disabled/foreign/filtered hints without a fallback,
+and leaves search, checkbox and save state unchanged. StrictMode replay is
+covered and cannot consume the same hint twice. Backend addition admission also
+rejects terminal/passthrough sessions and missing, disabled, foreign or
+non-MCP profiles; existing removal and same-set application retry paths remain.
+
+RED/GREEN evidence includes missing Use in, authorized profile metadata and
+cursor-loop rejection, StrictMode consumption, and real session admission.
+Focused frontend validation passes 71 tests across 11 files. Final browser
+and integration results follow.
+
+
+### Final validation, 2026-10-25
+
+Completed against management `45e90466378f982e13cc762c52432f14ab43c32c`.
+No missing owner path or unimplemented management prerequisite remains.
+
+- Focused frontend: 11 files / 71 tests passed, including discovery cancellation,
+  metadata pagination, hint parsing/StrictMode, manual save and conditional writes.
+  Log: `/tmp/assignment-wo03-final-unit.log`. Final focus refactor: eight tests
+  passed in `/tmp/assignment-focus-final.log`.
+- Session domain plus actual `components/task/chat/chat-input-container.test.tsx`:
+  108 files / 1059 tests passed (`/tmp/assignment-wo03-session-consumers.log`).
+- Full `pnpm run typecheck`, targeted changed-file ESLint and Go lint passed.
+  Logs: `/tmp/assignment-wo03-final-typecheck.log`,
+  `/tmp/assignment-wo03-refactor-eslint.log`,
+  `/tmp/assignment-wo03-final-go-lint.log`.
+- `go test -race` with `MCP|Selection|Effective|Usage|ImportStatus` passed in
+  `internal/agent/mcpconfig`, `internal/agent/settings/handlers`,
+  `internal/backendapp`, and `internal/agent/settings/store`. Store verification
+  included actual disposable PostgreSQL 17 as well as SQLite. Logs:
+  `/tmp/assignment-wo03-final-go.log`, `/tmp/assignment-wo03-final-store.log`.
+- Managed E2E, one host shard, zero retries: eight assignment and four management
+  integration journeys pass on Chromium; the same 12 journeys pass on
+  mobile-chrome. The fresh-build desktop run passed 11 cases
+  (`/tmp/kandev-run.e2e.zjibAhGh.log`); the corrected repository assertion passed
+  separately (`/tmp/kandev-run.e2e.4A2ZMTZ7.log`). The unchanged build then passed
+  all 12 phone cases (`/tmp/kandev-run.e2e.x1kaIXJ2.log`).
+  The repository test now waits for the shared Save bar to settle and asserts
+  exactly one MCP PUT while allowing the existing optional repository PATCH.
+  Registration tests distinguish the footer Close from the dialog Close icon.
+  The management rejection test explicitly Reloads choices before retrying,
+  matching the existing conditional-write draft interlock.
+- `pnpm run i18n:check`, spec catalog validation and spec lint passed. Public docs
+  validator tests passed (63), public page validation passed (54 pages), and
+  actual-diff documentation coverage returned covered. `git diff --check` passed.
+- Fresh desktop/phone assets are in ignored `apps/web/.pr-assets`; inspected
+  receipt, review, repository selection draft and session Customize captures.
+  The receipt keeps Done, both scopes explain effects before navigation, and
+  session Customize highlights an unchecked row without opening itself.
+
+The browser suite uses disposable workspaces and mock agents. No live provider
+certification, new agent creation by assignment, endpoint connection during
+registration/discovery, or sibling-owned exclusions behavior is claimed.
+
+
+Additional breakpoint regression passed on Chromium and mobile-chrome, one test
+per project with zero retries (`/tmp/kandev-run.e2e.DRpGU2fU.log`,
+`/tmp/kandev-run.e2e.t7p7H6Rk.log`). The global-profile review preserves its owner
+through 320, 390, 767, 768 and 900px widths and back to the original viewport.
+Measured primary hit areas are at least 44px on phone layouts and coarse
+pointers, stay inside the viewport, and do not introduce horizontal overflow.
+This includes a narrow fine-pointer desktop window and a coarse-pointer tablet.
+The production build is unchanged from the final fresh-build desktop suite.
+
+
+The first normal commit attempt rejected the session hook's complexity of 16
+(limit 15). Reusing the same committed selection state and saved IDs removes the
+repeated expressions without changing UI or retry behavior. Strict changed-file
+ESLint then passed; the session selection hook and real chat consumer passed all
+17 focused tests (`/tmp/assignment-wo03-session-hook-final.log`). Existing captures
+remain valid because this refactor changes no rendered behavior. No hook bypass
+was used. The historical verification command now names the actual hint test.

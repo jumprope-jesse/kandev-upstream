@@ -100,8 +100,11 @@ func mcpSelectionAdditionValidator(p routeParams) mcpconfig.SelectionOwnerValida
 		taskID := ownerID
 		if scope == mcpconfig.SelectionScopeTaskSession {
 			session, err := p.taskSvc.GetTaskSession(ctx, ownerID)
-			if err != nil || session == nil || session.State == models.TaskSessionStateCancelled {
+			if err != nil || session == nil {
 				return fmt.Errorf("task session unavailable")
+			}
+			if err := validateMCPSessionAddition(ctx, p, workspaceID, session); err != nil {
+				return err
 			}
 			taskID = session.TaskID
 		}
@@ -113,4 +116,22 @@ func mcpSelectionAdditionValidator(p routeParams) mcpconfig.SelectionOwnerValida
 		}
 		return nil
 	}
+}
+
+func validateMCPSessionAddition(ctx context.Context, p routeParams, workspaceID string, session *models.TaskSession) error {
+	if session.IsPassthrough || session.State == models.TaskSessionStateCancelled || session.State == models.TaskSessionStateCompleted || session.State == models.TaskSessionStateFailed {
+		return fmt.Errorf("task session unavailable")
+	}
+	if p.agentSettingsRepo == nil {
+		return fmt.Errorf("session profile unavailable")
+	}
+	profile, err := p.agentSettingsRepo.GetAgentProfile(ctx, session.AgentProfileID)
+	if err != nil || profile == nil || !profile.Enabled || (profile.WorkspaceID != "" && profile.WorkspaceID != workspaceID) {
+		return fmt.Errorf("session profile unavailable")
+	}
+	agent, err := p.agentSettingsRepo.GetAgent(ctx, profile.AgentID)
+	if err != nil || agent == nil || !agent.SupportsMCP {
+		return fmt.Errorf("session agent does not support MCP")
+	}
+	return nil
 }

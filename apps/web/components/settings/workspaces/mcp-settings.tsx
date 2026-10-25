@@ -1,4 +1,6 @@
 "use client";
+import { MCPAssignmentChooser } from "./mcp-assignment-chooser";
+import type { MCPRegistrationReceipt } from "@/hooks/domains/workspace/use-mcp-registration-completion";
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -73,18 +75,39 @@ function SelectionImpact({ impact }: { impact?: MCPSelectionImpact }) {
   );
 }
 
+function DefinitionBadges({ server }: { server: MCPServerDefinition }) {
+  const { t } = useTranslation();
+  return (
+    <div data-testid="mcp-definition-badges" className="flex flex-wrap gap-1.5">
+      <Badge variant="outline" className={METADATA_BADGE_CLASS}>
+        {modeLabel(server.execution_mode, t)}
+      </Badge>
+      <Badge variant="outline" className={METADATA_BADGE_CLASS}>
+        {transportLabel(server.transport, t)}
+      </Badge>
+      <Badge variant="outline" className={METADATA_BADGE_CLASS}>
+        {server.source === "registry"
+          ? t("settings:mcpSourceRegistry")
+          : t("settings:mcpSourceCustom")}
+      </Badge>
+    </div>
+  );
+}
+
 function ServerCard({
   server,
   onEdit,
   onToggle,
   onDelete,
   onUsage,
+  onUse,
 }: {
   server: MCPServerDefinition;
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
   onUsage: () => void;
+  onUse: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -102,21 +125,22 @@ function ServerCard({
         <p className="text-sm text-muted-foreground">
           {server.description || t("settings:mcpNoDescription")}
         </p>
-        <div data-testid="mcp-definition-badges" className="flex flex-wrap gap-1.5">
-          <Badge variant="outline" className={METADATA_BADGE_CLASS}>
-            {modeLabel(server.execution_mode, t)}
-          </Badge>
-          <Badge variant="outline" className={METADATA_BADGE_CLASS}>
-            {transportLabel(server.transport, t)}
-          </Badge>
-          <Badge variant="outline" className={METADATA_BADGE_CLASS}>
-            {server.source === "registry"
-              ? t("settings:mcpSourceRegistry")
-              : t("settings:mcpSourceCustom")}
-          </Badge>
-        </div>
+        <DefinitionBadges server={server} />
         <SelectionImpact impact={server.selection_impact} />
+        {!server.enabled && (
+          <p className="text-xs text-muted-foreground">{t("settings:mcpAssignmentDisabled")}</p>
+        )}
         <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className={STANDARD_ACTION_CLASS}
+            onClick={onUse}
+            disabled={!server.enabled}
+          >
+            {t("settings:mcpUseIn")}
+          </Button>
           <Button
             type="button"
             size="sm"
@@ -191,6 +215,7 @@ function ConfiguredMCPServers({
   onToggle,
   onDelete,
   onUsage,
+  onUse,
 }: {
   servers: MCPServerDefinition[];
   loading: boolean;
@@ -201,6 +226,7 @@ function ConfiguredMCPServers({
   onToggle: (server: MCPServerDefinition) => void;
   onDelete: (server: MCPServerDefinition) => void;
   onUsage: (server: MCPServerDefinition) => void;
+  onUse: (server: MCPServerDefinition) => void;
 }) {
   if (servers.length === 0 && !loading)
     return <EmptyCatalog onAdd={onAdd} addDisabled={addDisabled} />;
@@ -215,6 +241,7 @@ function ConfiguredMCPServers({
           onToggle={() => onToggle(server)}
           onDelete={() => onDelete(server)}
           onUsage={() => onUsage(server)}
+          onUse={() => onUse(server)}
         />
       ))}
     </div>
@@ -405,25 +432,59 @@ function useMCPServerActions(data: ReturnType<typeof useMCPWorkspaceSettings>) {
   return { deleteTarget, setDeleteTarget, deleting, toggleServer, deleteServer };
 }
 
+function MCPSettingsHeader({ onAdd, disabled }: { onAdd: () => void; disabled: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <SettingsPageHeader
+      title={t("settings:mcpServers")}
+      description={t("settings:workspaceMcpServersDescription")}
+      actions={
+        <Button
+          type="button"
+          className={controlSizingClassName("standard", "w-full cursor-pointer md:w-auto")}
+          onClick={onAdd}
+          disabled={disabled}
+        >
+          <IconPlus className="mr-2 size-4" />
+          {t("settings:addMcpServer")}
+        </Button>
+      }
+    />
+  );
+}
+
+function CatalogLoadError({ error }: { error: unknown }) {
+  const { t } = useTranslation();
+  return error ? (
+    <p
+      className="rounded-md border border-destructive/40 p-3 text-sm text-destructive"
+      role="alert"
+    >
+      {t("settings:mcpLoadFailed")}
+    </p>
+  ) : null;
+}
+
 function MCPSettingsContent({ workspaceId }: MCPSettingsProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { isMobile } = useResponsiveBreakpoint();
   const { toast } = useToast();
   const data = useMCPWorkspaceSettings(workspaceId);
+  const [assignment, setAssignment] = useState<MCPRegistrationReceipt | null>(null);
   const [view, setView] = useState<"configured" | "marketplace">("configured");
   const [editor, setEditor] = useState<MCPServerDefinition | null | undefined>(undefined);
   const { deleteTarget, setDeleteTarget, deleting, toggleServer, deleteServer } =
     useMCPServerActions(data);
+  const openEditor = (server: MCPServerDefinition | null) => {
+    data.registration.dismiss();
+    setEditor(server);
+  };
 
   const finishRegistration = (result: MCPRegistrationResult) => {
     if (result.status === "ignored") return;
     setEditor(undefined);
     setView("configured");
-  };
-  const openEditor = (server: MCPServerDefinition | null) => {
-    data.registration.dismiss();
-    setEditor(server);
   };
   const addDisabled = data.registration.uncertain || data.registration.pending;
 
@@ -451,21 +512,7 @@ function MCPSettingsContent({ workspaceId }: MCPSettingsProps) {
 
   return (
     <div className="space-y-6 overflow-x-hidden" data-testid="workspace-mcp-settings">
-      <SettingsPageHeader
-        title={t("settings:mcpServers")}
-        description={t("settings:workspaceMcpServersDescription")}
-        actions={
-          <Button
-            type="button"
-            className={controlSizingClassName("standard", "w-full cursor-pointer md:w-auto")}
-            onClick={() => openEditor(null)}
-            disabled={addDisabled}
-          >
-            <IconPlus className="mr-2 size-4" />
-            {t("settings:addMcpServer")}
-          </Button>
-        }
-      />
+      <MCPSettingsHeader onAdd={() => openEditor(null)} disabled={addDisabled} />
       <MCPViewTabs view={view} onChange={setView} marketplaceDisabled={addDisabled} />
       {data.registration.uncertain && (
         <MCPRegistrationUncertain onReview={data.reviewRegistration} />
@@ -474,16 +521,10 @@ function MCPSettingsContent({ workspaceId }: MCPSettingsProps) {
         <MCPRegistrationCompletion
           receipt={data.registration.receipt}
           onDone={data.registration.dismiss}
+          onUse={() => setAssignment(data.registration.receipt)}
         />
       )}
-      {Boolean(data.error) && (
-        <p
-          className="rounded-md border border-destructive/40 p-3 text-sm text-destructive"
-          role="alert"
-        >
-          {t("settings:mcpLoadFailed")}
-        </p>
-      )}
+      <CatalogLoadError error={data.error} />
       {view === "configured" ? (
         <ConfiguredMCPServers
           servers={data.servers}
@@ -491,6 +532,13 @@ function MCPSettingsContent({ workspaceId }: MCPSettingsProps) {
           isMobile={isMobile}
           onAdd={() => openEditor(null)}
           addDisabled={addDisabled}
+          onUse={(server) =>
+            setAssignment({
+              workspaceId,
+              definitionId: server.id,
+              displayName: server.display_name,
+            })
+          }
           onEdit={openEditor}
           onToggle={(server) => void toggleServer(server)}
           onDelete={setDeleteTarget}
@@ -501,6 +549,9 @@ function MCPSettingsContent({ workspaceId }: MCPSettingsProps) {
         />
       ) : (
         <MCPMarketplaceView workspaceId={workspaceId} data={data} onSaved={finishRegistration} />
+      )}
+      {assignment && (
+        <MCPAssignmentChooser receipt={assignment} onClose={() => setAssignment(null)} />
       )}
       <MCPUsageEntry workspaceId={workspaceId} data={data} />
       <DeleteMCPServerDialog

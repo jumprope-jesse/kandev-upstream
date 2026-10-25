@@ -1,5 +1,5 @@
 ---
-status: draft
+status: current
 system: agents
 requirements:
   - REQ-AGENTS-MCP-ASSIGNMENT-001
@@ -12,10 +12,11 @@ requirements:
 
 ## Boundaries and evidence
 
-Implementation checkpoint (2026-10-23): work orders 01 and 02 implement the
-conditional selection write and saved-only receipt below. Owner handoff and
-`mcpServerId` highlighting remain planned until the management sibling's
-committed navigation prerequisite is available. The full initiative is incomplete.
+Implementation completion (2026-10-25): all three work orders are implemented
+and verified. The management prerequisite is
+published at `45e90466378f982e13cc762c52432f14ab43c32c`, including authorized
+workspace-profile destination admission. Earlier design-only blockers are
+historical; the route and metadata contracts are integrated.
 
 This design extends [workspace MCP configuration](workspace-mcp-configuration.md)
 and [setup delivery](workspace-mcp-resolution-delivery.md). Agents retains
@@ -86,12 +87,18 @@ plug/Customize. The user makes the actual selection through the existing picker.
 URL-driven writes and preserves all existing drafts and save semantics.
 
 Use existing workspace repository reads (`useRepositories`/`listRepositories`),
-authorized profile records, paginated `listTasksByWorkspace`, and
+metadata-only `listMCPProfileOwners` in the registering workspace, paginated
+`listTasksByWorkspace`, and
 `listTaskSessions` after one task is selected. Put fetching and request-generation
 guards in a domain hook, not in presentational components. Search tasks with
 bounded pages (25 items) and explicit pagination. Do not fetch every task's
 sessions, read conversations, or use ensure/start APIs to discover candidates.
 Do not treat a client-side filter over unauthorized inventory as authorization.
+Profile inventory uses management's global-plus-exact-workspace metadata pages,
+with stable cursors, cancellation and repeated-cursor failure. It never uses the
+global `/agents` inventory as evidence that workspace profiles do not exist.
+Only enabled, concrete, MCP-supported profiles are new assignment candidates.
+The current owner and definition are read again before returning a destination.
 
 | Owner | Destination and save semantics | Scope explanation |
 | --- | --- | --- |
@@ -138,7 +145,8 @@ MCP section reveal/focus, and global-profile mounting. Workspace-owned profiles
 reject mismatched workspace hints; global profiles accept only an authorized
 workspace hint, without changing the active workspace. Repositories must belong
 to that workspace. Sessions must belong to the named task, with no fallback to
-another session. These behaviors are planned, not shipped in the parent.
+another session. These behaviors ship in the integrated management prerequisite;
+they were absent from the original parent PR.
 
 Assignment owns an optional `definitionId` extension that appends the reserved
 `mcpServerId` query key through `URLSearchParams`, preserving query and hash.

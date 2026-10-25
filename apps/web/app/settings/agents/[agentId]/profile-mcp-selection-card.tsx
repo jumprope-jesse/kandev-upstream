@@ -70,6 +70,11 @@ function ProfileMCPSelectionContent({
       <MCPSelectionContent
         query={query}
         onQueryChange={setQuery}
+        assignment={{
+          ownerKey: profileId,
+          active: !workspaceRequired,
+          ready: !definitions.loading && !editor.loading && !hasLoadError,
+        }}
         workspaceId={selectedWorkspaceId ?? undefined}
         definitions={definitions.definitions}
         selectedIds={selectedIds}

@@ -1,6 +1,6 @@
 ---
 created: 2026-10-22
-status: in_progress
+status: completed
 requirements:
   - REQ-AGENTS-MCP-ASSIGNMENT-001
   - REQ-AGENTS-MCP-ASSIGNMENT-002
@@ -21,8 +21,8 @@ retains save behavior and runtime timing. Build conditional selection safety,
 then saved-only completion, then the three owner handoffs and recovery.
 
 Implementation was explicitly authorized on 2026-10-23. Work orders 01 and 02 are
-complete. Work order 03 is pending and requires the committed
-management navigation prerequisite. Parent PR #3293 was squash-merged as
+complete. Work order 03 is implemented and verified after integrating the
+committed management navigation and profile admission prerequisite. Parent PR #3293 was squash-merged as
 `0b81ae48d4e2c358f80ac489e39388dfd8d7e6ab`. The assignment branch was rebased
 onto that verified current-main tip on 2026-10-24, then stacked onto the published
 management design branch for the authorized draft checkpoint below.
@@ -35,8 +35,8 @@ management design branch for the authorized draft checkpoint below.
 - Historical fetched parent: `feature/plan-workspace-mcp-c-dcc` at
   `193de56ba2597b335a97b1e5ab01d09340f22647`, verified 2026-10-22.
 - Current PR base: `feature/improve-mcp-manageme-mpe` at
-  `f7bbe6076477eebace8740a42adb206e7229e3e4`, verified against the remote on
-  2026-10-24. Its parent is main `cc687bdce96bc22fb8a9ca87abe571b8309d3125`.
+  `45e90466378f982e13cc762c52432f14ab43c32c`, verified against the remote on
+  2026-10-25. Its parent is main `cc687bdce96bc22fb8a9ca87abe571b8309d3125`.
   Draft publication is authorized. No review handling, CI waiting, or merge.
   Do not mutate the parent or sibling workspace.
 
@@ -295,7 +295,7 @@ overlapping full suites. Commands below are executed sequentially.
 
 - [x] [01: Guard selection replacement](task-01-guard-selection-replacement.md)
 - [x] [02: Preserve saved registration completion](task-02-registration-completion.md)
-- [ ] [03: Connect optional owner handoffs](task-03-owner-handoff.md)
+- [x] [03: Connect optional owner handoffs](task-03-owner-handoff.md)
 
 Order: 01, 02, then management sibling navigation prerequisite, then 03.
 No delegation is authorized. Work order 02 is an intermediate saved-only result;
@@ -337,3 +337,62 @@ uncommitted sibling code or implement its ownership here.
   drafts. A null/stale hook result cannot count as a successful save.
 - Sibling work may touch shared MCP files/locales. Reconcile commits by intent;
   do not overwrite sibling changes or repurpose their requirement IDs.
+
+
+## Management implementation integration, 2026-10-25
+
+Consumed published task01+02 `fea04b3413acf020d63e218af724889d5aa82aaa`,
+then final management `45e90466378f982e13cc762c52432f14ab43c32c` (including
+neutral evidence and the workspace-profile admission correction). Only assignment
+commits after each old management boundary were replayed. No parent or sibling
+workspace was changed. Backups preserve the published assignment cut point
+`6faaa61b817dc9dddc60d2c12026cc1273748a13` and local preparation:
+`backup/clarify-mcp-assignment-published-20261025`,
+`backup/clarify-mcp-assignment-pre-management-task02-20261025`, and
+`backup/clarify-mcp-assignment-before-profile-admission-20261025`.
+
+Current WO01 is `b1df2c4850cbf5b8179dd96823d30fce328c448b`; WO02 is
+`5ab7eade6`. Saved-ID comparison is `fbd32e5ca`, and independent discovery/hint
+preparation is `dc06ac4f58100da8f825f8c9b4276c2b2fba9927`. Exclusions must use
+its old assignment boundary and retain the identical saved-ID comparison and
+neighbor helper fixes once; no whole exclusions dependency was introduced.
+
+Integration preserved management's manual settings draft, legacy status,
+profile context and exact-owner route validation, alongside assignment's
+conditional snapshots and Reload choices interlock. Transport tests with
+fetchJson mocks live separately from real-fetch conditional-write tests. The
+usage test's deliberate stale foreign association is inserted directly so the
+new guarded writer does not invalidate the fixture setup. Management's settings
+draft test now reloads after a rejected save before retrying.
+
+WO03 now uses the committed metadata-only profile owner endpoint, including its
+cursor pages, instead of global agent inventory or Office instance identity.
+The final browser, backend, localization and documentation results are recorded
+in task-03-owner-handoff.md. PR #4760 remains draft. No CI waiter, review handling,
+auto-merge or merge is authorized.
+
+
+## Completed implementation, 2026-10-25
+
+All three work orders are complete. The current implementation supersedes the
+historical design-only and dependency-blocked checkpoints above. Registration
+can end at Done or continue through Use in to an authorized repository, profile,
+or existing task agent session. The management route and profile metadata
+prerequisite is integrated; no remaining implementation dependency is open.
+
+Final validation passed: 71 focused frontend tests; the session domain and real
+chat consumer (108 files, 1059 tests); full web typecheck; targeted frontend and
+Go lint; race-enabled MCP/Selection/Effective/Usage/ImportStatus checks across
+config, handlers, backend composition, and the SQLite/PostgreSQL settings store.
+The PostgreSQL cases used a disposable PostgreSQL 17 instance. Desktop and phone
+each pass all eight assignment and four management integration journeys, with
+zero retries. Detailed commands, correction history, and evidence are in WO03.
+Localization, public docs, spec catalog/lint and actual-diff documentation
+coverage also pass. Browser captures show saved completion, scope review,
+repository draft ownership and explicit session Customize on both viewports.
+
+Provider behavior uses the existing mock-provider E2E contract; this does not
+certify live third-party endpoints. PR #4760 stays draft. Publication does not
+authorize CI waiting, review handling, auto-merge, or merge. Exclusions must
+preserve its old assignment boundary `6faaa61b817dc9dddc60d2c12026cc1273748a13`
+and consume the verified new remote tip after publication.

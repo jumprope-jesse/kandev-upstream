@@ -11,9 +11,11 @@ import type { MCPRegistrationReceipt } from "@/hooks/domains/workspace/use-mcp-r
 export function MCPRegistrationCompletion({
   receipt,
   onDone,
+  onUse,
 }: {
   receipt: MCPRegistrationReceipt;
   onDone: () => void;
+  onUse: () => void;
 }) {
   const { t } = useTranslation();
   const workspace = useAppStore((state) =>
@@ -46,14 +48,23 @@ export function MCPRegistrationCompletion({
           <p className="text-sm text-muted-foreground">{t("settings:mcpRegistrationSavedOnly")}</p>
         </div>
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        className={controlSizingClassName("standard", "w-full cursor-pointer sm:w-auto")}
-        onClick={onDone}
-      >
-        {t("settings:done")}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          className={controlSizingClassName("standard", "w-full cursor-pointer sm:w-auto")}
+          onClick={onUse}
+        >
+          {t("settings:mcpUseIn")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className={controlSizingClassName("standard", "w-full cursor-pointer sm:w-auto")}
+          onClick={onDone}
+        >
+          {t("settings:done")}
+        </Button>
+      </div>
     </section>
   );
 }

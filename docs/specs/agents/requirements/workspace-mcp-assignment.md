@@ -1,5 +1,5 @@
 ---
-status: draft
+status: active
 system: agents
 created: 2026-10-22
 owners:

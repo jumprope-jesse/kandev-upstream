@@ -58,6 +58,12 @@ describe("settings-owned MCP draft", () => {
     });
     expect(result.current.dirty).toBe(true);
     expect(result.current.selectedIds).toEqual(["draft"]);
+    await act(async () => {
+      await expect(result.current.save()).rejects.toThrow("MCP selection is not ready to save");
+    });
+    expect(replaceMCPSelections).toHaveBeenCalledTimes(1);
+    await act(() => result.current.editor.reload());
+    expect(result.current.selectedIds).toEqual(["draft"]);
     await act(() => result.current.save());
     expect(result.current.selectedIds).toEqual(["canonical"]);
     expect(result.current.dirty).toBe(false);

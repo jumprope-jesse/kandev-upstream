@@ -90,8 +90,9 @@ export function useTaskSessionMCPSelection(context: SessionMCPContext) {
   );
   const draft = useMCPSelectionDraft(contextKey, editor.selection);
   const error = editor.saveError ?? editor.loadError ?? definitions.error;
+  const state = editor.selection?.mcp_state;
   usePendingSelectionRefresh(
-    editor.selection?.mcp_state,
+    state,
     editor.reload,
     editor.saving || Boolean(editor.saveError) || isHandledApiError(error),
   );
@@ -113,20 +114,22 @@ export function useTaskSessionMCPSelection(context: SessionMCPContext) {
     },
     [editor.save, draft.setSelectedIds, draft.acknowledge],
   );
+  const savedSelectedIds = editor.selection?.definition_ids ?? [];
   if (!available) return null;
   return {
     contextKey,
+    ...(context.sessionId ? { assignmentSessionId: context.sessionId } : {}),
     workspaceId: ownerWorkspace,
     definitions: definitions.definitions,
     definitionsLoading: definitions.loading || editor.loading,
     selectedIds: draft.selectedIds,
-    savedSelectedIds: editor.selection?.definition_ids ?? [],
+    savedSelectedIds,
     inherited,
     onSelectedIdsChange: save,
-    state: editor.selection?.mcp_state,
+    state,
     disabled: editor.saving || Boolean(editor.saveError),
     reload: editor.reload,
-    retry: () => save(editor.selection?.definition_ids ?? []),
+    retry: () => save(savedSelectedIds),
     retrying: editor.saving,
     error,
   };

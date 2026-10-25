@@ -1,3 +1,5 @@
+import { PrAssetCapture } from "./pr-asset-capture";
+import { waitForFiniteAnimations } from "./pr-capture";
 import { expect, type Page, type Request, type TestInfo } from "@playwright/test";
 import type { ApiClient } from "./api-client";
 import type { SeedData } from "../fixtures/test-base";
@@ -68,6 +70,11 @@ export async function checkSavedRegistration(
   seed: SeedData,
   { source, phone, info }: { source: Source; phone: boolean; info: TestInfo },
 ) {
+  const assets = new PrAssetCapture(
+    page,
+    phone ? "mobile-mcp-assignment.spec.ts" : "mcp-assignment.spec.ts",
+    { captureKey: `saved-${source}` },
+  );
   const runtime = `${ASSIGNMENT_PREFIX}${source}-${phone ? "phone" : "desktop"}`;
   const before = await api.getMCPSelections("repository", seed.repositoryId, seed.workspaceId);
   const save = await openRegistration(page, seed.workspaceId, source, runtime);
@@ -96,6 +103,17 @@ export async function checkSavedRegistration(
       await assertNoDocumentHorizontalOverflow(page, "saved registration");
       await page.screenshot({ path: info.outputPath(`saved-${source}-phone.png`), fullPage: true });
     }
+    if (assets.capturing) {
+      await waitForFiniteAnimations(receipt);
+      await assets.screenshot("saved", {
+        caption: "Saved MCP definition with optional Use in and Done",
+      });
+    }
+    await receipt.getByRole("button", { name: "Use in", exact: true }).click();
+    const chooser = page.getByTestId("mcp-assignment-chooser");
+    await expect(chooser).toBeVisible();
+    await chooser.getByRole("button", { name: "Close", exact: true }).first().click();
+    await expect(receipt).toBeVisible();
     await done.click();
     await expect(receipt).toHaveCount(0);
     await page.reload();
@@ -107,6 +125,7 @@ export async function checkSavedRegistration(
     assertStorageOnly(capture.writes, capture.endpointRequests, seed.workspaceId, source);
   } finally {
     capture.stop();
+    assets.flush();
   }
 }
 

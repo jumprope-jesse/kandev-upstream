@@ -9,7 +9,9 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn(),
   contributor: {} as { save: () => Promise<void>; isDirty: boolean },
 }));
-vi.mock("@/components/settings/settings-save-provider", () => ({
+vi.mock("@/components/settings/settings-save-provider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/settings/settings-save-provider")>()),
+  useSettingsSaveCoordinator: () => ({ status: "idle", exclusiveBusy: false }),
   useSettingsSaveContributor: (value: typeof mocks.contributor) => {
     mocks.contributor = value;
   },
