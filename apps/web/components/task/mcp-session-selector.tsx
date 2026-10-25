@@ -13,12 +13,9 @@ import { MCPSelectionContent } from "@/components/mcp/mcp-selection-picker";
 import { McpSelectionNotice } from "./chat/mcp-explorer/mcp-selection-notice";
 import { mcpSelectionStateLabelKey } from "./chat/mcp-explorer/mcp-selection-presentation";
 import { mcpSelectionChanges } from "./chat/mcp-explorer/mcp-selection-changes";
+import { McpPendingChanges } from "./chat/mcp-explorer/mcp-selection-changes-view";
 import {
-  McpPendingChanges,
-  McpPendingRowAnnotation,
-} from "./chat/mcp-explorer/mcp-selection-changes-view";
-import {
-  McpSessionExclusionAction,
+  McpSessionRowAnnotation,
   McpDormantExclusions,
 } from "./chat/mcp-explorer/mcp-session-exclusions";
 import { MobilePickerSheet } from "./mobile/mobile-picker-sheet";
@@ -95,19 +92,19 @@ export function MCPSessionSelectionBody({
       )}
       {reload && <MCPSelectionSaveFeedback error={props.error} reload={reload} />}
       {onExcludedIdsChange && (
-        <div className="space-y-1.5 text-pretty text-xs text-muted-foreground">
-          <p>{t("settings:mcpSessionExclusionsDescription")}</p>
-          <p>{t("settings:mcpRequiredToolsSeparate")}</p>
-          <p role="status">{t("settings:mcpExclusionCount", { total: excludedIds.length })}</p>
-        </div>
-      )}
-      {onExcludedIdsChange && (
-        <McpDormantExclusions
-          definitions={dormant}
-          excludedIds={excludedIds}
-          onChange={onExcludedIdsChange}
-          disabled={props.disabled}
-        />
+        <>
+          <div className="space-y-1.5 text-pretty text-xs text-muted-foreground">
+            <p>{t("settings:mcpSessionExclusionsDescription")}</p>
+            <p>{t("settings:mcpRequiredToolsSeparate")}</p>
+            <p role="status">{t("settings:mcpExclusionCount", { total: excludedIds.length })}</p>
+          </div>
+          <McpDormantExclusions
+            definitions={dormant}
+            excludedIds={excludedIds}
+            onChange={onExcludedIdsChange}
+            disabled={props.disabled}
+          />
+        </>
       )}
       {definitionsLoading ? (
         <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
@@ -130,30 +127,15 @@ export function MCPSessionSelectionBody({
           definitions={props.definitions.filter((item) => !dormantIds.has(item.id))}
           error={reload ? undefined : props.error}
           sessionPresentation
-          renderServerAnnotation={(id) => {
-            const change = changes.changes.find((item) => item.definition_id === id);
-            const item = props.inherited?.find((item) => item.definition.id === id);
-            const excluded = excludedIds.includes(id);
-            return (
-              <>
-                {change && <McpPendingRowAnnotation change={change} />}
-                {onExcludedIdsChange && item && (
-                  <McpSessionExclusionAction
-                    definition={item.definition}
-                    excluded={excluded}
-                    disabled={props.disabled}
-                    onChange={() =>
-                      onExcludedIdsChange(
-                        excluded
-                          ? excludedIds.filter((value) => value !== id)
-                          : [...excludedIds, id],
-                      )
-                    }
-                  />
-                )}
-              </>
-            );
-          }}
+          renderServerAnnotation={(id) => (
+            <McpSessionRowAnnotation
+              change={changes.changes.find((item) => item.definition_id === id)}
+              definition={props.inherited?.find((item) => item.definition.id === id)?.definition}
+              excludedIds={excludedIds}
+              onChange={onExcludedIdsChange}
+              disabled={props.disabled}
+            />
+          )}
           sectionLabel={t("settings:mcpSessionAdditions")}
           testId={`${props.testId}-picker`}
         />

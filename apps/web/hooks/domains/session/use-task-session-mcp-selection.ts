@@ -90,7 +90,11 @@ export function useTaskSessionMCPSelection(context: SessionMCPContext) {
   );
   const draft = useMCPSelectionDraft(contextKey, editor.selection);
   const error = editor.saveError ?? editor.loadError ?? definitions.error;
-  const state = editor.selection?.mcp_state;
+  const {
+    mcp_state: state,
+    definition_ids: savedSelectedIds = [],
+    excluded_definition_ids: excludedIds = [],
+  } = editor.selection ?? {};
   const blocked = editor.saving || Boolean(editor.saveError);
   usePendingSelectionRefresh(state, editor.reload, blocked || isHandledApiError(error));
   const inherited = useMemo<MCPInheritedSelection[]>(
@@ -127,7 +131,6 @@ export function useTaskSessionMCPSelection(context: SessionMCPContext) {
     },
     [editor.save, draft.setSelectedIds, draft.acknowledge],
   );
-  const savedSelectedIds = editor.selection?.definition_ids ?? [];
   const onExcludedIdsChange = useCallback(
     (ids: string[]) => {
       void editor.save(editor.selection?.definition_ids ?? [], ids).catch(() => undefined);
@@ -143,7 +146,7 @@ export function useTaskSessionMCPSelection(context: SessionMCPContext) {
     definitionsLoading: definitions.loading || editor.loading,
     selectedIds: draft.selectedIds,
     savedSelectedIds,
-    excludedIds: editor.selection?.excluded_definition_ids ?? [],
+    excludedIds,
     onExcludedIdsChange,
     inherited,
     onSelectedIdsChange: save,

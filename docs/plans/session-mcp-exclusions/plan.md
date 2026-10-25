@@ -472,3 +472,84 @@ checks were not repeated solely for this conflict-free rebase. Mock fixtures do
 not establish live-provider health. The final remote SHA and draft URL are
 recorded in the saved task plan and coordinator handoff after publication.
 No CI watcher, reviewer request, auto-merge, or merge is part of this checkpoint.
+
+
+## Assignment completion integration: 2026-10-25
+
+The coordinator authorized routine integration after assignment work order 03.
+Verified the published assignment branch at
+`fe08307e9f4701715e9fc906b1d65916c18971e1`, based on management
+`45e90466378f982e13cc762c52432f14ab43c32c`. Assignment reports all its work
+orders complete. The earlier pending-work descriptions above are historical.
+The PR remains draft #4761 targeting `feature/clarify-mcp-assignme-mhh`.
+
+The clean original tip `69be161548702b4be530536f925777da628302e0` is preserved
+by `backup/exclusions-pre-assignment-wo03-20261025`. Replayed only the four
+exclusion-owned commits after OLD assignment
+`6faaa61b817dc9dddc60d2c12026cc1273748a13` onto the verified replacement:
+
+- `8deeb1d125fa8b5ad91be7568b1317c42162af77` ->
+  `ecf6743c2a664ce436fd667bbab74b2e5d33912d`.
+- `8822bfaf2f0c4320ce26b4d6fddb29ef1fe81236` ->
+  `80f0ba5f04d08c8e8427ce3a9915f9f28a8e9bab`.
+- `20b498ed916c99ecfa35af14aab82d8170ef0c4d` ->
+  `64411a07c0de2f19dbcda1e6c315f6be8461e1d9`.
+- `69be161548702b4be530536f925777da628302e0` ->
+  `d7c38c3df8c1fa24917ac47d683fd04e6ea9cd18`.
+
+Resolved shared response, hook, selector, and locale conflicts by preserving
+both contracts: profile legacy-import status, assignment route hints and explicit
+Customize activation, session origins, exclusions, and saved-versus-applied
+comparison. Assignment now owns the identical committed-positive-ID correction
+and both neighboring E2E helper corrections; these remain present once and no
+longer appear in the exclusions diff. Range-diff shows the other three replayed
+commits unchanged. No parent or sibling commits were replayed.
+
+Combined UI code exceeded the existing function length/complexity limits.
+Extracted the row annotation into the existing exclusions module, combined the
+identical exclusion capability guards, and destructured the accepted selection
+snapshot once. Existing behavior tests passed before and after this refactor;
+no behavior or new product scope was introduced.
+
+Affected checks:
+
+- MCP/selection/effective Go suites passed under race detection in mcpconfig,
+  settings/store, settings/handlers, and backendapp. This includes the new
+  assignment eligibility contract and exclusions on the integrated source.
+- Actual disposable PostgreSQL 17.11 concurrent selection/exclusion writers,
+  owner conditions, resolution snapshots, import/deletion, and cleanup passed
+  under race detection. Receipt: `/tmp/exclusions-wo03-postgres.log`.
+- Eight focused frontend suites passed (66 tests); after the refactor, the
+  session hook, rendered exclusions, and context-switch suites passed (18 tests).
+- Typecheck, i18n completeness, changed frontend lint with zero warnings, and
+  changed handler Go lint with zero issues passed.
+- Specification catalog (403 decisions, 1738 specifications), full spec lint,
+  and whitespace checks passed.
+
+The first managed browser attempt completed the fresh build but inherited the
+previous preview's Tailscale bind address. Fixture startup failed before browser
+assertions. The owned process group was stopped; the wrapper's zero exit without
+a summary is not a passing test receipt. Reused that fresh build with the existing
+isolated browser library path and explicit loopback bind. Initial log:
+`/tmp/kandev-run.e2e.kYD7CBJ1.log`. Main port 9998 was not changed.
+
+Browser integration passed on the fresh build, sequentially, with one worker
+and retries disabled:
+
+- Desktop: 22 passed (`/tmp/kandev-run.e2e.QCr4CCVz.log`), covering exclusions,
+  pending changes, task selection, assignment handoff, and the capture scenario.
+- Phone: 17 passed (`/tmp/kandev-run.e2e.XhxN3AA8.log`), covering exclusions,
+  pending changes, task selection, and assignment handoff.
+
+Commands used the managed host runner with `--no-build` only after the completed
+fresh build above. The final source was unchanged between those runs. Existing
+lifecycle and SQLguard/store-conformance receipts remain applicable to unchanged
+source; no full suite, CI waiter, or review handling was added.
+
+Fresh desktop and phone screenshot assets were then captured with
+`CAPTURE_PR_ASSETS=1` in a dedicated one-case managed run, passed without retries
+(`/tmp/kandev-run.e2e.rlWdhyZC.log`). Both manifest entries were checked against
+this run, compressed, and visually inspected. The disposable capture spec was
+removed. The images show the final integrated source; later changes are this
+verification record only. The full hook receipt and final remote SHA are recorded
+in the saved task plan and coordinator handoff after publication.

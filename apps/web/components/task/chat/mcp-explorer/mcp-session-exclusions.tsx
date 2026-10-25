@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@kandev/ui/button";
 import { McpSectionHeading } from "@/components/mcp/mcp-origin-sections";
 import { McpDefinitionDetails } from "@/components/mcp/mcp-definition-details";
-import type { MCPServerDefinition } from "@/lib/types/http-mcp";
+import { McpPendingRowAnnotation } from "./mcp-selection-changes-view";
+import type { MCPSetupChange, MCPServerDefinition } from "@/lib/types/http-mcp";
 
 export function McpSessionExclusionAction({
   excluded,
@@ -81,5 +82,40 @@ export function McpDormantExclusions({
         ))}
       </div>
     </section>
+  );
+}
+
+export function McpSessionRowAnnotation({
+  change,
+  definition,
+  excludedIds,
+  onChange,
+  disabled,
+}: {
+  change?: MCPSetupChange;
+  definition?: MCPServerDefinition;
+  excludedIds: string[];
+  onChange?: (ids: string[]) => void;
+  disabled?: boolean;
+}) {
+  const excluded = Boolean(definition && excludedIds.includes(definition.id));
+  return (
+    <>
+      {change && <McpPendingRowAnnotation change={change} />}
+      {onChange && definition && (
+        <McpSessionExclusionAction
+          definition={definition}
+          excluded={excluded}
+          disabled={disabled}
+          onChange={() =>
+            onChange(
+              excluded
+                ? excludedIds.filter((value) => value !== definition.id)
+                : [...excludedIds, definition.id],
+            )
+          }
+        />
+      )}
+    </>
   );
 }
