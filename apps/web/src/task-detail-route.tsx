@@ -33,7 +33,10 @@ import {
   readTaskNavigationIdentity,
   useTaskNavigationReadState,
 } from "@/lib/state/task-navigation-reads";
-import type { TaskNavigationContext } from "@/lib/state/task-navigation-reads";
+import type {
+  TaskNavigationIdentity,
+  TaskNavigationContext,
+} from "@/lib/state/task-navigation-reads";
 import { getOwnedTaskSessionId, useTaskRouteProjection } from "./task-route-projection";
 import { useTaskDetailRouteRecovery } from "./task-detail-route-recovery";
 import { deriveTaskDetailRouteView } from "./task-detail-route-view";
@@ -104,6 +107,10 @@ export function TaskDetailRoute({
     route.currentRouteStatus === "error" ||
     (route.currentRouteStatus === "loaded" &&
       (route.initialState === null || hydratedState === route.initialState));
+
+  if (sessionId && route.currentRouteStatus === "error") {
+    return <TaskSessionUnavailable />;
+  }
 
   if (route.showInitialLoading) {
     return <TaskRouteLoading retrying={route.readState.phase === "retrying"} />;
@@ -451,6 +458,7 @@ function useTaskDetailRouteFetch(args: {
     readTaskNavigationIdentity(store, taskId, { context: navigationContext })
       .then((identity) => {
         if (cancelled || !isTaskNavigationCurrent(store, navigationContext)) return;
+        assertRequestedSession(identity, taskId, sessionId);
         const shellState: TaskDetailRouteState = {
           routeKey,
           status: "loaded",
@@ -510,4 +518,34 @@ function TaskRouteLoading({
       </p>
     </div>
   );
+}
+
+function TaskSessionUnavailable() {
+  const { t } = useTranslation();
+  return (
+    <div
+      className="flex h-full items-center justify-center p-4"
+      data-testid="task-session-unavailable"
+    >
+      <p role="alert" className="text-sm text-muted-foreground">
+        {t("settings:mcpOwnerUnavailable")}
+      </p>
+    </div>
+  );
+}
+
+function assertRequestedSession(
+  identity: TaskNavigationIdentity,
+  taskId: string,
+  sessionId?: string,
+) {
+  if (
+    !sessionId ||
+    identity.allSessionsResponse.sessions.some(
+      (session) => session.id === sessionId && session.task_id === taskId,
+    )
+  )
+    return;
+  // i18n-exempt: internal admission failure. The route renders a localized unavailable state.
+  throw new Error("Requested task session is unavailable");
 }

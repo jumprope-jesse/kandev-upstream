@@ -114,6 +114,7 @@ export type MCPSessionSelectionState = {
 };
 
 export type MCPSelectionResponse = {
+  legacy_import_status?: "complete" | "pending" | "unknown";
   workspace_id: string;
   scope: MCPSelectionScope;
   owner_id: string;

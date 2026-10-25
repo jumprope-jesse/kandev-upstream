@@ -482,21 +482,13 @@ describe("TaskDetailRoute client navigation", () => {
 });
 
 describe("TaskDetailRoute session selection", () => {
-  it("uses the session selected by route loading when the requested session is unavailable", async () => {
+  // @covers AC-AGENTS-MCP-MANAGEMENT-001.2
+  it("never opens a fallback conversation for an unavailable explicit session", async () => {
     mocks.readTaskNavigationIdentity.mockResolvedValueOnce(makeNavigationIdentity());
-
     renderTaskRoute(<TaskDetailRoute taskId={TASK_ONE_ID} sessionId="missing-session" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId(KANBAN_TASK_SHELL_TEST_ID).getAttribute("data-session-id")).toBe(
-        "session-1",
-      );
-    });
-    expect(mocks.fetchTaskNavigationEnrichment).toHaveBeenCalledWith(
-      expect.anything(),
-      "session-1",
-      { store: expect.anything() },
-    );
+    await screen.findByTestId("task-session-unavailable");
+    expect(screen.queryByTestId(KANBAN_TASK_SHELL_TEST_ID)).toBeNull();
+    expect(mocks.fetchTaskNavigationEnrichment).not.toHaveBeenCalled();
   });
 
   it("rejects late enrichment from an earlier A-B-A navigation", async () => {

@@ -153,14 +153,15 @@ workspace context in every variant for validation, even when the final task
 URL omits it. Normalize a caller's separate `sessionId` to `ownerId`; reject
 disagreement when both fields are supplied. Do not invent missing agent/task
 identities from the active browser context. The exported type and helper live
-in the planned `apps/web/lib/mcp/management-links.ts`.
+in `apps/web/lib/mcp/management-links.ts`.
 
 - Catalog usage:
   `/settings/workspaces/:workspaceId/mcp-servers?serverId=:definitionId&view=usage`.
   Open the saved definition's Used in view in the existing catalog.
 - Profile:
   `/settings/agents/:agentId/profiles/:profileId?workspaceId=:workspaceId#mcp`.
-  Resolve the profile under its stored agent. Validate the workspace hint.
+  Resolve the profile under its stored agent ID (legacy agent-name routes remain
+  compatible). Validate the workspace hint.
   Reveal the shared MCP card after its context loads. A workspace-owned profile
   rejects a hint for another workspace. A global profile uses the validated
   hint without changing the application's active workspace preference.

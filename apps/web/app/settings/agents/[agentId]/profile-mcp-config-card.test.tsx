@@ -1,12 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@kandev/ui/tooltip";
+import { StateProvider } from "@/components/state-provider";
 import { SettingsSaveProvider } from "@/components/settings/settings-save-provider";
-
-// The card's save contributor is gated on org.config.manage. This suite renders
-// outside StateProvider, so the hook that reads the auth slice is stubbed to
-// the default install (auth disabled, which resolves to an administrator).
-vi.mock("@/hooks/domains/auth/use-is-admin", () => ({ useIsAdmin: () => true }));
 
 import { ProfileMcpConfigCard } from "./profile-mcp-config-card";
 
@@ -17,17 +13,21 @@ afterEach(cleanup);
 describe("ProfileMcpConfigCard dirty fields", () => {
   it("marks only the changed MCP control and its owning card dirty", () => {
     render(
-      <SettingsSaveProvider>
-        <TooltipProvider>
-          <ProfileMcpConfigCard
-            profileId="profile-1"
-            supportsMcp
-            initialConfig={{ profile_id: "profile-1", enabled: false, servers: {} }}
-            onToastError={vi.fn()}
-          />
-        </TooltipProvider>
-      </SettingsSaveProvider>,
+      <StateProvider>
+        <SettingsSaveProvider>
+          <TooltipProvider>
+            <ProfileMcpConfigCard
+              profileId="profile-1"
+              supportsMcp
+              initialConfig={{ profile_id: "profile-1", enabled: false, servers: {} }}
+              onToastError={vi.fn()}
+            />
+          </TooltipProvider>
+        </SettingsSaveProvider>
+      </StateProvider>,
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "Global profile legacy configuration" }));
 
     const enabled = screen.getByTestId("mcp-enabled");
     const servers = screen.getByTestId("mcp-servers-profile-1");

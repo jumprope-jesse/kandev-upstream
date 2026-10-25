@@ -221,7 +221,7 @@ each work order. Install dependencies once from `apps/` before package commands.
 ## Work orders
 
 - [x] [Task 01: Authorized usage projection](task-01-usage-projection.md)
-- [ ] [Task 02: Management navigation](task-02-management-navigation.md), after 01
+- [x] [Task 02: Management navigation](task-02-management-navigation.md), after 01
 - [ ] [Task 03: Neutral evidence](task-03-neutral-evidence.md), after 02
 
 ## Verification results
@@ -275,7 +275,7 @@ assertion that the destination already exists.
 ## Implementation progress, 2026-10-25
 
 The user requested implementation after the published design handoff. Task 01
-is complete; its work order records RED/GREEN and final affected checks. Task 02
-is now in progress. Task 03 remains pending. The published PR remains draft;
+and task 02 are complete; their work orders record RED/GREEN and final affected
+checks. Task 03 remains pending. The published PR remains draft;
 no review handling or merge is authorized. The design-only statements above
 record the earlier publication checkpoint, not the current local worktree.

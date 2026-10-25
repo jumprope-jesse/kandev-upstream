@@ -949,6 +949,19 @@ The **Marketplace** view combines Kandev-curated templates with cached public Re
 
 If public Registry discovery is unavailable, Kandev shows the most recent successful cache and marks it stale or degraded. Deprecated or deleted entries cannot be added from the marketplace. Existing configured servers remain available until you edit or disable them.
 
+## Find where a server is selected
+
+In **Configured**, choose **Used in** on a saved server. The list names the
+profiles, repositories, tasks, and sessions you can access that directly select
+that definition. Open an owner to reach its existing settings or conversation.
+Opening a link does not change any selection. A session link opens that exact
+conversation; use its composer plug to customize MCP servers.
+
+Use **Load more** for further results. If refreshing fails, retry before opening
+an owner from the old list. No visible selections does not mean no other owner
+uses the server: access permissions can limit the list. Inherited use and
+connection evidence remain in the session.
+
 ## Select workspace MCP servers for agents
 
 After a definition is configured, select it where it should apply:
@@ -999,7 +1012,16 @@ is idle. Providers without safe reconnection apply saved changes when the agent
 starts again. The state notice tells you which timing applies. If reconnect
 fails, the previous applied selection remains active and the UI offers retry.
 
-Existing legacy profile MCP JSON is imported into workspace definitions when possible. During migration, the legacy profile configuration remains the fallback for a profile-workspace pair that has not imported successfully. New persistent profile selections use the workspace catalog.
+For a saved global profile, **Workspace** selects the catalog context without
+changing your active workspace. If settings have unsaved changes, switching
+workspaces offers Save and leave, Discard and leave, or continued editing.
+A failed save keeps the current workspace and draft. Repository and profile
+choices still use the shared **Save changes** action.
+
+Existing legacy profile MCP JSON is imported into workspace definitions when possible. During migration, the legacy profile configuration remains the fallback for a profile-workspace pair that has not imported successfully. New persistent profile selections use the workspace catalog. If import is not
+confirmed, callers with global configuration permission can open **Global profile
+legacy configuration**. Those settings apply to the global profile and save
+separately from workspace selections.
 
 </details>
 

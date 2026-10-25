@@ -1,7 +1,7 @@
 ---
 id: "02-management-navigation"
 title: "Named management navigation and global-profile workspace picker"
-status: pending
+status: done
 wave: 2
 depends_on:
   - "01-usage-projection"
@@ -166,4 +166,30 @@ hide legacy configuration or change runtime fallback.
 
 ## Results
 
-Pending. No rendered verification or implementation tests ran during design.
+Implementation completed on 2026-10-25. The original design checkpoint did not
+include implementation verification; the following checks ran on this work.
+
+- RED/GREEN covered safe import-status projection, owner-link validation,
+  paged usage races, context-owned settings drafts, stored agent-ID profile
+  routing, exact-session admission, and focus return from Used in.
+- Focused backend profile/selection/legacy tests and affected Go lint passed.
+  Frontend helper, hook, settings-save, route, and legacy-recovery regressions
+  passed. Full web typecheck passed with an 8 GiB Node heap.
+- Affected ESLint/Prettier, seven-language completeness, pseudo/Traditional
+  Chinese generation, and the new-copy ratchet passed.
+- Managed isolated desktop management and existing selection tests: 9 passed.
+  Phone management and existing selection tests: 7 passed. Final management
+  scenarios add sparse paging, stale/denied recovery, reload, and invalid hints.
+  Desktop: 3 passed. Final phone checkpoint: 3 passed.
+- Geometry checks cover 320/393/767px, desktop resizing, and 900px touch;
+  full-height usage scrolling, final-row reachability, focus return, 44px touch
+  controls, and retained drafts passed. Desktop and phone captures use synthetic
+  data; these fixtures do not verify third-party connectivity.
+- Public documentation validators (63 tests and 54 pages), specification catalog,
+  specification lint, documentation coverage, and whitespace checks passed.
+
+Pure presenter behavior is tested through the actual browser flows rather than
+new markup-only component tests. Shared draft logic has focused hook tests.
+Assignment owns the optional `mcpServerId` focus hint; this work provides typed
+owner routes, validated workspace/repository context, section entry, and exact
+session navigation without selection writes.
