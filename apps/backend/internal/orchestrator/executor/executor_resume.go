@@ -2631,6 +2631,15 @@ func (e *Executor) applyResumeRepoConfig(
 	if baseBranch != "" && e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType) {
 		req.BaseBranch = baseBranch
 	}
+	// The initial launch keyed the environment inventory on the checkout
+	// branch (topLevelBranchIdentitySlug prefers CheckoutBranch), but this path
+	// only stamps BaseBranch for clone-URL executors. Without the checkout
+	// identity, a task created with a working branch different from its base
+	// fails every resume with ErrWorkspaceReuseUnsafe. Carry the identity only:
+	// CheckoutBranch itself stays unset so nothing is re-fetched or re-checked out.
+	if req.BranchIdentitySlug == "" && e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType) {
+		req.BranchIdentitySlug = resumeCheckoutBranchIdentity(repositoryID, allRepos)
+	}
 
 	var repository *models.Repository
 	for _, info := range allRepos {
@@ -2701,6 +2710,26 @@ func resolveResumeRepoIDAndBranch(session *models.TaskSession, allRepos []*repoI
 		repositoryID = allRepos[0].RepositoryID
 	}
 	return repositoryID, session.BaseBranch
+}
+
+// resumeCheckoutBranchIdentity returns the sanitized checkout-branch slug of
+// the single task-repository row for repositoryID, or "" when the row has no
+// checkout branch or the repository is attached more than once (ambiguous).
+func resumeCheckoutBranchIdentity(repositoryID string, repos []*repoInfo) string {
+	var match *repoInfo
+	for _, info := range repos {
+		if info == nil || info.RepositoryID != repositoryID {
+			continue
+		}
+		if match != nil {
+			return ""
+		}
+		match = info
+	}
+	if match == nil || strings.TrimSpace(match.CheckoutBranch) == "" {
+		return ""
+	}
+	return worktree.SanitizeBranchSlug(match.CheckoutBranch)
 }
 
 // resolveResumeBaseBranch prefers the current task-repository row when a
