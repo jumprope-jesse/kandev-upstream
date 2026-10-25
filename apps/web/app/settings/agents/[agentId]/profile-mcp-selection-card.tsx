@@ -10,14 +10,13 @@ import {
   useSettingsSaveCoordinator,
   useSettingsSaveContributor,
 } from "@/components/settings/settings-save-provider";
-import { MCPSelectionPicker } from "@/components/mcp/mcp-selection-picker";
+import { MCPSelectionContent } from "@/components/mcp/mcp-selection-picker";
 import { useAppStore } from "@/components/state-provider";
 import { useMCPWorkspaceDefinitions } from "@/hooks/domains/workspace/use-mcp-workspace-settings";
 import { isHandledApiError } from "@/lib/api/client";
 import { useMCPSelectionEditor } from "@/hooks/domains/workspace/use-mcp-selection-editor";
 import { Button } from "@kandev/ui/button";
 import { controlSizingClassName } from "@kandev/ui/control-sizing";
-import Link from "@/components/routing/app-link";
 import { usePathname, useRouter, useSearchParams } from "@/lib/routing/client-router";
 import { readMCPContextHint } from "@/lib/mcp/management-links";
 import { useMCPSettingsSelectionDraft } from "@/hooks/domains/workspace/use-mcp-settings-selection-draft";
@@ -51,6 +50,7 @@ function ProfileMCPSelectionContent({
   onSelectedIdsChange,
 }: ProfileMCPSelectionContentProps) {
   const { t } = useTranslation();
+  const [query, setQuery] = useState("");
   const hasLoadError = Boolean(definitions.error || editor.loadError);
   let selectionContent: ReactNode;
   if (workspaceRequired) {
@@ -67,15 +67,15 @@ function ProfileMCPSelectionContent({
     );
   } else {
     selectionContent = (
-      <MCPSelectionPicker
-        key={selectedWorkspaceId}
+      <MCPSelectionContent
+        query={query}
+        onQueryChange={setQuery}
         workspaceId={selectedWorkspaceId ?? undefined}
         definitions={definitions.definitions}
         selectedIds={selectedIds}
         onSelectedIdsChange={onSelectedIdsChange}
         disabled={hasLoadError}
-        label={t("settings:mcpServers")}
-        description={t("settings:mcpProfileSelectionDescription")}
+        sectionLabel={t("settings:mcpProfileSelectionDescription")}
         testId={`profile-mcp-selection-${profileId}`}
       />
     );
@@ -211,6 +211,7 @@ export function ProfileMCPSelectionCard({
           </p>
         )}
         <ProfileMCPSelectionContent
+          key={selectedWorkspaceId}
           profileId={profileId}
           hasWorkspaceProp={Boolean(workspaceId)}
           selectedWorkspaceId={selectedWorkspaceId}
@@ -225,19 +226,6 @@ export function ProfileMCPSelectionCard({
           onSelectedIdsChange={setSelectedIds}
           onWorkspaceChange={changeWorkspace}
         />
-        {selectedWorkspaceId && (
-          <div className="px-6 pb-4">
-            <Link
-              className={controlSizingClassName(
-                "standard",
-                "inline-flex h-auto max-w-full items-center whitespace-normal text-sm underline",
-              )}
-              href={`/settings/workspaces/${encodeURIComponent(selectedWorkspaceId)}/mcp-servers`}
-            >
-              {t("settings:mcpManageCatalog")}
-            </Link>
-          </div>
-        )}
         {showLegacy && (
           <div className="space-y-2 border-t px-6 py-4">
             <p className="text-sm text-muted-foreground">

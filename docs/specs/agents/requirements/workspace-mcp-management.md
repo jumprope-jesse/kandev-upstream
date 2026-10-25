@@ -74,8 +74,9 @@ workspace while preserving settings save ownership and legacy behavior.
   persistence controls for profile selections. Session customization shall keep
   its existing autosave behavior.
 - **AC-AGENTS-MCP-MANAGEMENT-002.4:** The picker shall explain that choices apply
-  to this profile in the selected workspace. A catalog-management link shall
-  preserve that context. Changing these defaults shall not claim immediate
+  to this profile in the selected workspace. Render one inline searchable
+  selection list, without a second opener, duplicate description, or catalog
+  shortcut. Changing these defaults shall not claim immediate
   application to an existing agent or alter its provider timing.
 - **AC-AGENTS-MCP-MANAGEMENT-002.5:** Catalog navigation and selection shall
   preserve legacy fallback until successful import for that workspace-profile

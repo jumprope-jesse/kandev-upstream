@@ -123,8 +123,13 @@ export async function checkGlobalProfileWorkspaceGuard(
     await workspace.click();
     await page.getByRole("option", { name: workspaceName, exact: true }).click();
     const picker = page.getByTestId(`profile-mcp-selection-${seed.agentProfileId}`);
-    await picker.getByRole("button").click();
-    const choice = page.getByTestId(`mcp-choice-${server.id}`).getByRole("checkbox");
+    const choice = picker.getByTestId(`mcp-choice-${server.id}`).getByRole("checkbox");
+    await expect(choice).toBeVisible();
+    await expect(picker.getByRole("textbox", { name: "Search MCP servers" })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "Manage workspace catalog" })).toHaveCount(0);
+    await expect(
+      page.locator("#mcp").getByText("Choose MCP servers for this profile.", { exact: true }),
+    ).toHaveCount(1);
     await choice.click();
     const viewport = page.viewportSize()!;
     for (const width of [320, 768, viewport.width]) {
@@ -179,7 +184,6 @@ export async function checkGlobalProfileWorkspaceGuard(
         caption: "Workspace-aware global profile MCP choices",
       });
     }
-    await picker.getByRole("button").click();
     await expect(choice).toBeChecked();
     await choice.click();
     await page.keyboard.press("Escape");

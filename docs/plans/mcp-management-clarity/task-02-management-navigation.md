@@ -77,9 +77,10 @@ UI-01 desktop: configured card -> Used in -> titled dialog -> scope headings ->
 named owner links -> continuation/retry. Phone: fixed Back/title -> one full-height
 scroll body of full-width owner rows. No nested editor or assignment controls.
 
-UI-02 desktop: MCP heading -> Workspace -> scope sentence -> shared choices ->
-catalog link. Phone uses a short workspace picker and existing shared selection
-surface. Shared Save changes remains outside that picker. Dirty switching uses
+UI-02 desktop and phone: MCP heading -> Workspace -> scope sentence -> inline
+search and checkbox list. Reuse the repository settings list treatment; the
+settings page owns scrolling. No nested selector opener/drawer or catalog link.
+Shared Save changes remains outside the list. Dirty switching uses
 the existing save/discard/stay guard. Initial empty, load error, denied context,
 legacy pending, and failed save states remain explicit.
 
@@ -231,3 +232,21 @@ Correction validation completed, 2026-10-25:
 The shared conditional-write path and assignment-owned focus hint are unchanged.
 The metadata API, route admission and ownership rationale are recorded in the
 existing system design; no separate architectural decision is needed.
+
+### User-tested profile presentation cleanup, 2026-10-25
+
+The user requested removal of the catalog shortcut and duplicate profile picker
+chrome after testing the isolated instance. Keep the existing shared list
+inline on desktop and phone. Existing workspace-switch guards, save ownership,
+legacy recovery and assignment focus hints retain their contracts. Update the
+existing global/workspace profile browser flows to exercise directly visible
+choices, a single search/description, and absence of the catalog shortcut.
+
+Cleanup validation: the new direct-visibility assertion failed before the UI
+change. Final focused global/workspace profile scenarios passed on desktop
+(2) and phone (2), including manual save/reload and workspace switch guards.
+Full web typecheck, affected ESLint, public docs (63 tests, 54 pages),
+specification lint/catalog, work-order coverage and whitespace checks passed.
+No new user-facing strings were introduced. Screenshots were inspected, and
+the isolated Tailscale instance received the updated web assets with its data
+and backend preserved.

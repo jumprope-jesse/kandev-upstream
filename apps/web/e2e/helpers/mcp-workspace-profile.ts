@@ -67,8 +67,7 @@ export async function checkWorkspaceProfileDestination(
     const destination = page.getByTestId("workspace-profile-mcp-destination");
     await expect(destination.getByRole("heading", { name: owner.name })).toBeVisible();
     const picker = page.getByTestId(`profile-mcp-selection-${profileId}`);
-    await picker.getByRole("button").click();
-    const choice = page.getByTestId(`mcp-choice-${server.id}`).getByRole("checkbox");
+    const choice = picker.getByTestId(`mcp-choice-${server.id}`).getByRole("checkbox");
     await expect(choice).toBeChecked();
     await choice.click();
     expect(
@@ -87,7 +86,7 @@ export async function checkWorkspaceProfileDestination(
       .toEqual([]);
     await page.reload();
     await expect(destination).toBeVisible();
-    await expect(picker).toContainText("0 selected");
+    await expect(choice).not.toBeChecked();
     if (capture.capturing) {
       await waitForFiniteAnimations(destination);
       await capture.screenshot("workspace-profile", {

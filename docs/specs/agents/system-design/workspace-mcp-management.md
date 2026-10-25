@@ -219,6 +219,13 @@ their stored workspace. Global profiles accept a validated route workspace or
 require an explicit choice from authorized workspaces. Do not silently select
 the first workspace or modify the application's active workspace preference.
 
+Use the shared `MCPSelectionContent` directly in the profile card. Keep one
+scope description and inline search/checkbox list on desktop and phone, with
+the settings page as scroll owner. Reuse the repository settings list treatment
+and touch-sized rows. Do not add a nested picker opener/drawer or catalog
+shortcut. Reset only the search query on workspace-context change; selection
+drafts and their navigation guard keep their existing owner.
+
 Treat `(profile_id, workspace_id)` as the editor identity. Reuse
 `useMCPWorkspaceDefinitions` and `useMCPSelectionEditor`. Mask old choices
 immediately when identity changes and reject stale reads and save completions.

@@ -1019,7 +1019,10 @@ For a saved global profile, **Workspace** selects the catalog context without
 changing your active workspace. If settings have unsaved changes, switching
 workspaces offers Save and leave, Discard and leave, or continued editing.
 A failed save keeps the current workspace and draft. Repository and profile
-choices still use the shared **Save changes** action.
+choices still use the shared **Save changes** action. Profile MCP choices appear
+as one searchable checkbox list below the workspace selector on desktop and
+phone. To edit catalog definitions, open **Settings > Workspaces > _workspace_ >
+MCP servers**.
 
 Existing legacy profile MCP JSON is imported into workspace definitions when possible. During migration, the legacy profile configuration remains the fallback for a profile-workspace pair that has not imported successfully. New persistent profile selections use the workspace catalog. If import is not
 confirmed, callers with global configuration permission can open **Global profile
