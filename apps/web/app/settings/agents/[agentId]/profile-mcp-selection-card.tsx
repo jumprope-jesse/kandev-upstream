@@ -195,7 +195,8 @@ export function ProfileMCPSelectionCard({
     heading.current?.scrollIntoView({ block: "start" });
     heading.current?.focus({ preventScroll: true });
   }, [profileId, selectedWorkspaceId, editor.selection]);
-  const showLegacy = editor.selection?.legacy_import_status !== "complete" || legacyOpen;
+  const showLegacy =
+    !workspaceId && (editor.selection?.legacy_import_status !== "complete" || legacyOpen);
   return (
     <>
       <SettingsCard isDirty={dirty} id="mcp">

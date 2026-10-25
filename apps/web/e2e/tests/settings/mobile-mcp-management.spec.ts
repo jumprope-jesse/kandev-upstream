@@ -1,3 +1,4 @@
+import { checkWorkspaceProfileDestination } from "../../helpers/mcp-workspace-profile";
 import { test } from "../../fixtures/test-base";
 import {
   checkMCPUsageNavigation,
@@ -26,4 +27,12 @@ test("keeps partial usage, stale reads and unavailable owners distinct", async (
   seedData,
 }) => {
   await checkMCPUsagePaging(testPage, apiClient, seedData);
+});
+
+test("opens workspace-owned profile metadata without global inventory leakage", async ({
+  testPage,
+  apiClient,
+  seedData,
+}) => {
+  await checkWorkspaceProfileDestination(testPage, apiClient, seedData, true);
 });

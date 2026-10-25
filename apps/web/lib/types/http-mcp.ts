@@ -230,3 +230,20 @@ export type MCPCatalogUsagePage = {
   items: MCPOwnerUsage[];
   next_cursor?: string;
 };
+
+/** Safe settings-profile identity for workspace MCP navigation and discovery. */
+export type MCPProfileOwner = {
+  id: string;
+  agent_id: string;
+  agent_name: string;
+  name: string;
+  workspace_id: string;
+  kind: "concrete" | "dynamic";
+  enabled: boolean;
+  supports_mcp: boolean;
+};
+export type MCPProfileOwnerPage = {
+  workspace_id: string;
+  items: MCPProfileOwner[];
+  next_cursor?: string;
+};

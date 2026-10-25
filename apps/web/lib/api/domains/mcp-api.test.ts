@@ -26,3 +26,18 @@ describe("catalog usage transport", () => {
     await expect(list("workspace", "definition")).rejects.toBe(failure);
   });
 });
+
+// @covers AC-AGENTS-MCP-MANAGEMENT-001.2
+it("reads only authorized profile metadata with uncached encoded context", async () => {
+  fetchMock.mockResolvedValue({ items: [], workspace_id: "w/1", next_cursor: "p" });
+  await mcpAPI.listMCPProfileOwners("w/1", "p/1");
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    "/api/v1/workspaces/w%2F1/mcp-profile-owners?cursor=p%2F1",
+    expect.objectContaining({ cache: "no-store" }),
+  );
+  await mcpAPI.getMCPProfileOwner("w/1", "p/1");
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    "/api/v1/workspaces/w%2F1/mcp-profile-owners/p%2F1",
+    expect.objectContaining({ cache: "no-store" }),
+  );
+});

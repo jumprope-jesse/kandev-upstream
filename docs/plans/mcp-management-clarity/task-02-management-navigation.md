@@ -193,3 +193,41 @@ new markup-only component tests. Shared draft logic has focused hook tests.
 Assignment owns the optional `mcpServerId` focus hint; this work provides typed
 owner routes, validated workspace/repository context, section entry, and exact
 session navigation without selection writes.
+
+
+### Workspace-profile admission correction, 2026-10-25
+
+Assignment integration exposed a remaining admission gap: `GET /agents`
+filters workspace profiles, so matching a stored agent ID did not admit a
+workspace profile absent from that inventory. The earlier results prove global
+profile navigation, not this missing case. Reopened this work order to add the
+metadata contract in the design's workspace-profile destination admission
+section and mount the existing selector under the exact authorized owner route.
+
+Validate metadata paging, global/exact-workspace inclusion, foreign/deleted
+exclusion, disabled-owner identity, sanitized failures, fail-closed dependencies,
+read-only configuration handling, response-context races, and no global-store
+pollution. Extend the existing desktop/phone management scenarios with a real
+workspace-owned profile that is absent from GET /agents, Used in navigation,
+manual Save changes, reload and cross-workspace rejection. Retain the existing
+global workspace-switch regression. No assignment-specific code is included.
+
+Correction validation completed, 2026-10-25:
+
+- RED/GREEN covered metadata reads, canonical identity, and route admission.
+  Backend race tests passed with SQLite and isolated PostgreSQL 17, including
+  paging, authorization, safe errors and configuration-free projection.
+- Twelve frontend client/profile hook tests passed, including stale-context
+  rejection and unchanged global profile behavior. Full web typecheck, affected
+  Go/ESLint checks and internationalization validation passed.
+- Four desktop and four phone management scenarios passed. They include the
+  workspace-owned profile route, manual Save changes, reload, foreign-workspace
+  rejection, and existing global-profile switching guards. An initial desktop
+  cleanup failure was corrected before the final passing run.
+- Catalog/specification lint, work-order coverage and public documentation
+  checks passed. Desktop and phone screenshots were inspected with synthetic
+  data. These tests do not verify third-party MCP connectivity.
+
+The shared conditional-write path and assignment-owned focus hint are unchanged.
+The metadata API, route admission and ownership rationale are recorded in the
+existing system design; no separate architectural decision is needed.

@@ -955,7 +955,10 @@ In **Configured**, choose **Used in** on a saved server. The list names the
 profiles, repositories, tasks, and sessions you can access that directly select
 that definition. Open an owner to reach its existing settings or conversation.
 Opening a link does not change any selection. A session link opens that exact
-conversation; use its composer plug to customize MCP servers.
+conversation; use its composer plug to customize MCP servers. A workspace-owned
+profile opens its MCP selection card in that workspace, even when it is absent
+from the global agent-profile list. These choices use the shared **Save changes**
+control. Other profile configuration stays in its existing settings surface.
 
 Use **Load more** for further results. If refreshing fails, retry before opening
 an owner from the old list. No visible selections does not mean no other owner

@@ -320,3 +320,40 @@ projection, management navigation, and neutral evidence. All three work orders
 are implemented and record their validation. The original design turn ran no
 runtime validation; implementation checks ran on 2026-10-25. The PR remains
 draft, and mock browser fixtures do not establish live provider connectivity.
+
+
+### Workspace-profile destination admission
+
+The global `GET /agents` inventory intentionally excludes workspace-owned
+profiles. It is not a destination-admission source for those profiles, and
+Office AgentInstance normalization is not a substitute for settings identity.
+The management follow-up exposes metadata-only reads:
+
+- `GET /api/v1/workspaces/:id/mcp-profile-owners?cursor=:lastId&limit=:n`
+  returns `{workspace_id, items, next_cursor?}`. The default page is 50 rows,
+  maximum 100. Stable ID ordering uses the last returned visible profile ID
+  as the continuation cursor. An empty page is a successful authorized read.
+- `GET /api/v1/workspaces/:id/mcp-profile-owners/:profileId` returns one owner.
+  Both operations authorize workspace access before reading. Missing, deleted,
+  and foreign-workspace profiles are indistinguishable on the detail route.
+  Missing dependencies fail closed; failed reads never return empty success.
+
+Each item contains only `id`, `agent_id`, `agent_name`, `name`, `workspace_id`,
+`kind`, `enabled`, and `supports_mcp`. Empty `workspace_id` means global.
+Inventory includes global plus exact-workspace settings profiles, including
+ineligible or disabled rows so consumers can distinguish eligibility from
+access. The query reads no configuration, secrets, or legacy backfill and
+performs no writes. Clients must still use authorized selection APIs to save.
+
+`listMCPProfileOwners` and `getMCPProfileOwner` in `lib/api/domains/mcp-api.ts`
+perform uncached reads. `useMCPProfileOwner` masks previous context immediately,
+rejects mismatched response identities, and ignores obsolete completions.
+The existing profile route validates its workspace, agent and profile through
+this detail read whenever `workspaceId` is explicit. Global profiles retain
+the existing full settings editor. Workspace-owned concrete MCP profiles open
+the existing `ProfileMCPSelectionCard` with the real profile ID and fixed
+workspace, using shared manual Save changes. This is the same owner route,
+not a new management destination or a fabricated full profile configuration.
+Workspace-owned metadata never enters the global agent store or task picker.
+Assignment consumes this metadata contract for its own chooser/revalidation;
+its `mcpServerId` hint and conditional writes remain independently owned.

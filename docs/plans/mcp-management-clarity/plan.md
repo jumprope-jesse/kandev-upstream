@@ -292,3 +292,17 @@ assignment sibling. Neutral evidence is the final additive commit. No selection
 assignment, session exclusion, built-in management, runtime reconnect, or new
 probe was introduced. PR #4759 targets main and remains draft. Screenshots use
 synthetic data. No CI waiting, review handling, or merge was performed.
+
+
+Integration correction, 2026-10-25: task 02 reopened for workspace-profile
+admission after the assignment sibling identified that the global profile
+inventory excludes those rows. The earlier completion report did not cover
+this case. The focused correction preserves the agreed route and ownership,
+adds authorized metadata reads, and retests both workspace and global profiles.
+Tasks 01 and 03 remain complete. Publication remains draft-only.
+
+Correction completed, 2026-10-25: authorized canonical profile metadata now
+admits workspace-owned profiles through the existing owner route without
+changing the global inventory. Task 02 is complete again. Its correction
+receipt records the additional SQLite/Postgres, frontend, desktop and phone
+checks. Assignment can consume the published metadata and navigation contract.
