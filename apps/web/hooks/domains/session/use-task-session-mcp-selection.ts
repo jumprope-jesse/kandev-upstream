@@ -120,6 +120,7 @@ export function useTaskSessionMCPSelection(context: SessionMCPContext) {
     definitions: definitions.definitions,
     definitionsLoading: definitions.loading || editor.loading,
     selectedIds: draft.selectedIds,
+    savedSelectedIds: editor.selection?.definition_ids ?? [],
     inherited,
     onSelectedIdsChange: save,
     state: editor.selection?.mcp_state,

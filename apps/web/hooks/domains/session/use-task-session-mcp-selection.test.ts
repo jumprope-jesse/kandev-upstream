@@ -222,6 +222,7 @@ it("retains a failed session draft and does not poll away its conflict", async (
     result.current?.onSelectedIdsChange(["docs"]);
   });
   expect(result.current?.selectedIds).toEqual(["docs"]);
+  expect(result.current?.savedSelectedIds).toEqual([]);
   const count = vi.mocked(getMCPSelections).mock.calls.length;
   await act(async () => {
     await vi.advanceTimersByTimeAsync(2500);

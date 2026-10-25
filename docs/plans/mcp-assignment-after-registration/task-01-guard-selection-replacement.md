@@ -192,3 +192,27 @@ Verification:
 
 Commit identity is recorded in the saved task plan and coordination message
 immediately after the commit (a commit cannot contain its own SHA).
+
+### 2026-10-25 saved-comparison correction
+
+Consumed the minimal committed correction from exclusions remote head
+`69be161548702b4be530536f925777da628302e0`: session-hook `savedSelectedIds`,
+the selector's optional saved-ID prop, and comparison against that committed
+snapshot rather than the retained checkbox draft. Imported only the two
+neighbor helper assertion/reload adjustments from that same commit. No exclusion
+fields, controls, resolver, storage, or whole-branch prerequisite was introduced.
+Exclusions was notified to reconcile these identical hunks once on its next rebase.
+
+RED: the existing hook conflict test could not read saved IDs; the desktop
+pending-changes journey lost all three saved comparison rows after a rejected
+uncheck. GREEN: 43 focused unit/consumer tests, 10 desktop E2E cases and 8 phone
+E2E cases passed, with no browser retries. Typecheck (8 GiB heap), focused ESLint,
+63 public-doc validator tests and the 54-page docs validation passed. Public
+explanation now distinguishes the saved pending list from the retained draft.
+
+Browser commands used the managed host runner, one shard, sequential projects,
+and isolated fixtures. Desktop covered `tests/chat/mcp-pending-changes.spec.ts`
+plus `tests/task/task-mcp-selection.spec.ts`; phone covered their `mobile-`
+counterparts. RED log: `/tmp/kandev-run.e2e.alcZxHxm.log`; GREEN logs:
+`/tmp/kandev-run.e2e.H7JKgokB.log` and `/tmp/kandev-run.e2e.DS7TdSx5.log`.
+These mock-provider checks do not certify live endpoint/provider behavior.

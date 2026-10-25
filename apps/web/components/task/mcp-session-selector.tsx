@@ -29,6 +29,7 @@ export type MCPSessionSelectorProps = {
   definitions: MCPServerDefinition[];
   definitionsLoading?: boolean;
   selectedIds: string[];
+  savedSelectedIds?: string[];
   onSelectedIdsChange: (ids: string[]) => void;
   inherited?: MCPInheritedSelection[];
   state?: MCPSessionSelectionState | null;
@@ -49,7 +50,7 @@ export function MCPSessionSelectionBody({
   ...props
 }: MCPSessionSelectorProps & { query: string; onQueryChange: (query: string) => void }) {
   const { t } = useTranslation();
-  const changes = mcpSelectionChanges(state, props.selectedIds);
+  const changes = mcpSelectionChanges(state, props.savedSelectedIds ?? props.selectedIds);
   return (
     <div className="min-w-0 space-y-5">
       {state && (
