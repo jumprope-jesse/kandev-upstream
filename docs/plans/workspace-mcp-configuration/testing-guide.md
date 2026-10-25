@@ -151,9 +151,13 @@ and profile settings use shared Save changes; they do not autosave like session
 Customize. There should be no UUID-based origin labels.
 
 For the sandbox's global Mock profiles, open **Settings > Agents > Mock >
-profile** and confirm the known routing gap: **MCP Configuration / MCP servers
-(JSON)** appears instead of the catalog picker. Seeded profile inheritance can
-still be inspected in tasks, but that does not prove the missing editor works.
+profile** and choose the workspace in **MCP servers**. Confirm the workspace
+catalog picker is available, saved choices survive reload, and changing the
+workspace with edits uses Save changes, Discard, or Continue editing. A failed
+save must retain the current workspace and draft. When legacy import is pending
+or unknown, the separate global legacy configuration recovery stays available.
+This management follow-up closes the routing gap recorded at the parent
+checkpoint; the historical merge-readiness ledger is unchanged.
 
 ## 4. Create a task and add another agent (4 minutes)
 

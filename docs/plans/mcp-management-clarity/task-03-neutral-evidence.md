@@ -1,7 +1,7 @@
 ---
 id: "03-neutral-evidence"
 title: "Neutral MCP delivery and unobserved evidence"
-status: pending
+status: done
 wave: 3
 depends_on:
   - "02-management-navigation"
@@ -150,4 +150,33 @@ conflicting authorities. Do not broaden “unobserved” to connected-without-to
 
 ## Results
 
-Pending. No runtime, browser, or implementation verification ran during design.
+Implementation and verification started on 2026-10-25 after tasks 01 and 02.
+The original design checkpoint did not run runtime or browser checks.
+
+- RED: the partial-observation and prior-attempt tests exposed inferred delivery;
+  the shared presentation test exposed amber delivery. All three failed for
+  the expected behavior before the production changes.
+- GREEN: all 45 focused tests passed across the explorer view model, status
+  presentation, explorer behavior, selection markers, and WebSocket reducer.
+  A final shared-presentation check passed after extracting the neutral class.
+- Full web typecheck, affected ESLint, localization completeness, public docs
+  validation (63 tests and 54 pages), catalog validation (403 decisions and
+  1734 specifications), specification lint (including 36 linter tests), and
+  actual-change documentation coverage passed.
+- Existing localized copy is reused; no locale key/value changes were needed.
+  The generated catalogs from task 02 remain in sync, verified by i18n:check.
+- Managed existing explorer scenarios passed: 3 desktop/touch-tablet and 4
+  phone. Coverage includes tooltip/list/detail neutral delivery, current Active
+  evidence, filtering, pending/deferred/failed/applied states, reload, tools,
+  scrolling, and 320/393/767px plus 900px touch geometry.
+- Inspected desktop and 393px phone screenshots in light, dark, and pseudo
+  locale. Pending notices remain independent; labels wrap within the existing
+  surface. Captures contain synthetic data and are uploaded to draft PR #4759.
+  These checks do not establish live third-party endpoint connectivity.
+
+Only current configured-only fallback and the shared neutral dot styling change
+production behavior. Existing Active, Connected, Failed, filtered reasons,
+selection timing, and runtime producers retain their previous contracts.
+The missing historical Platform patch was not recovered; current requirements
+and design were reconciled by intent. The parent testing guide now records the
+implemented global-profile picker; merge-readiness history is unchanged.

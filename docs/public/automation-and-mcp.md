@@ -1140,7 +1140,10 @@ result, descriptions, schemas, or token estimates. The explorer still shows
 safe status metadata. The built-in Kandev server becomes **Connected** after
 protocol acceptance, either legacy MCP initialize or an accepted modern
 request. It becomes **Active** after it serves `tools/list`. Missing
-observation is not a failure. Red appears only for an explicit sanitized error.
+observation is not a failure. Delivered and unobserved rows use neutral styling.
+A configured name alone stays **Unknown**; another server's active report
+does not establish delivery. Saved-change notices remain independent of these
+connection states. Red appears only for an explicit sanitized error.
 
 The report is per Kandev session and execution. It stores only bounded,
 sanitized attachment facts. It does not store MCP headers, environment values,

@@ -1062,8 +1062,11 @@ Only custom TUI agents can be deleted from the agent list. Built-in definitions 
   omitted, such as an unsupported HTTP transport. The desktop hover and phone
   drawer separate **Saved changes** from **Current agent** evidence.
   Red identifies an explicit sanitized error. **Delivered, connection
-  unverified** applies to a profile server that connects directly to the agent.
-  Kandev cannot inspect that server's tools. Inspect the affected session
+  unverified** uses neutral styling: configuration reached the agent, but
+  connection has not been observed. A configured server without delivery
+  evidence remains **Unknown**, even beside an active server. These
+  neutral states can appear alongside saved changes waiting to apply. For a
+  profile server that connects directly to the agent, Kandev cannot inspect its tools. Inspect the affected session
   because each report belongs to one session and execution.
 - **Automation cannot select a profile:** passthrough agent profiles and Local executor profiles are intentionally omitted from the automation selectors.
 

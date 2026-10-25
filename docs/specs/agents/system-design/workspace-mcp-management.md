@@ -1,5 +1,5 @@
 ---
-status: draft
+status: current
 system: agents
 requirements:
   - REQ-AGENTS-MCP-MANAGEMENT-001
@@ -10,20 +10,21 @@ requirements:
 
 # Workspace MCP management design
 
-## Boundary and current evidence
+## Boundary and baseline evidence
 
 The baseline is PR #3293 at `193de56ba2597b335a97b1e5ab01d09340f22647`.
 The parent [testing guide](../../../plans/workspace-mcp-configuration/testing-guide.md)
 explicitly defers this management experience. No archived design or Platform
-patch was recovered. This document records a new proposal grounded in that tip.
+patch was recovered. The design was rebuilt from that tip. Implementation was
+subsequently authorized and completed on 2026-10-25.
 
 For draft publication on 2026-10-24, the branch was reconciled onto main
 `cc687bdce96bc22fb8a9ca87abe571b8309d3125`, containing parent squash
 `0b81ae48d4e2c358f80ac489e39388dfd8d7e6ab`, without replaying parent commits.
 The relevant MCP selection, profile picker, and evidence contracts remain the
-baseline for this proposal. Current settings navigation and repository discard
-support must be retained when task 02 is implemented. Publication does not
-implement these proposed destinations or authorize implementation.
+baseline for the extension. The design-only publication did not authorize
+implementation. A later user request authorized all three work orders; existing
+settings navigation and repository discard support are retained.
 
 Agents owns the catalog and direct associations. Task services supply owner
 identity and access. Platform owns attachment evidence. Existing
@@ -38,7 +39,7 @@ remain authoritative. This extension needs no new persistence model or ADR.
 | REQ-AGENTS-MCP-MANAGEMENT-003 | Evidence presentation |
 | REQ-AGENTS-MCP-MANAGEMENT-004 | Responsive composition |
 
-Verified source gaps:
+Verified source gaps at the design baseline (resolved by this implementation):
 
 - `SelectionImpact` in `internal/agent/mcpconfig/selections.go` counts direct
   associations. Catalog handlers return these counts, without named owners.
@@ -115,7 +116,7 @@ counts remain deletion semantics, not an authorization oracle for the new view.
 Create a shared frontend destination builder in `lib/mcp/management-links.ts`
 (new). It accepts typed identities and emits only internal known routes.
 Encode path/query segments with existing helpers. Never accept a backend URL
-or arbitrary `returnTo` value. The shared catalog destination is proposed as:
+or arbitrary `returnTo` value. The shared catalog destination is:
 
 ```text
 /settings/workspaces/:workspaceId/mcp-servers?serverId=:definitionId&view=usage
@@ -307,14 +308,15 @@ secret references, secret values, or legacy JSON. Do not log response bodies,
 names, or cursor payloads. Use existing bounded error codes and request logging.
 No new telemetry producer is needed.
 
-Update the existing how-to sections in `docs/public/agents-and-profiles.md`
-and `docs/public/automation-and-mcp.md` with the implementation. Explain direct
-saved usage, workspace scope, fallback, and delivery limits. Do not publish
-this draft experience as shipped. Reconcile parent deferred-UI testing notes
-when the follow-up ships while preserving historical verification ledgers.
+The existing how-to sections in `docs/public/agents-and-profiles.md` and
+`docs/public/automation-and-mcp.md` describe direct saved usage, workspace scope,
+legacy recovery, and delivery limits. Parent testing notes now cover the
+implemented global-profile picker; historical verification ledgers are preserved.
 
 ## Delivery
 
 [The plan](../../../plans/mcp-management-clarity/plan.md) sequences usage
-projection, management navigation, and neutral evidence. No implementation or
-runtime validation occurred during this design turn.
+projection, management navigation, and neutral evidence. All three work orders
+are implemented and record their validation. The original design turn ran no
+runtime validation; implementation checks ran on 2026-10-25. The PR remains
+draft, and mock browser fixtures do not establish live provider connectivity.
