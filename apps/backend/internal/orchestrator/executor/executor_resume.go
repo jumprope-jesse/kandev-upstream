@@ -2628,12 +2628,13 @@ func (e *Executor) applyResumeRepoConfig(
 	// is the only other writer of req.BaseBranch outside the worktree path, and it
 	// skips clone-URL setup entirely once reuse is required. Local executors are
 	// excluded so LocalPreparer keeps using the current on-disk branch.
-	if baseBranch != "" && e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType) {
+	requiresCloneURL := e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType)
+	if baseBranch != "" && requiresCloneURL {
 		req.BaseBranch = baseBranch
 	}
 	// Clone-URL resumes carry checkout-branch identity without requesting
 	// another checkout.
-	if req.WorkspaceReuseRequired && req.BranchIdentitySlug == "" && e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType) {
+	if req.WorkspaceReuseRequired && req.BranchIdentitySlug == "" && requiresCloneURL {
 		req.BranchIdentitySlug = resumeCheckoutBranchIdentity(repositoryID, allRepos)
 	}
 

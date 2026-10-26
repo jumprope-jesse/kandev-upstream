@@ -93,3 +93,10 @@ A non-reuse regression initially failed because fresh materialization published
 The existing request-builder test now declares required reuse explicitly.
 Focused race checks passed after this correction. Hosted CI and a fresh Claude
 review remain pending for the new commit.
+
+### Claude readability suggestion
+
+Review of head 69fe5a9c reported zero blockers and one suggestion. Reuse one
+local `requiresCloneURL` value for the base-branch and checkout-identity guards.
+This removes the repeated capability check and shortens both conditions.
+The existing branch and executor regressions verify the preserved behavior.
