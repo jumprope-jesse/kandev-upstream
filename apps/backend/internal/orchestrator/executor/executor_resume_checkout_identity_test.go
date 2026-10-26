@@ -87,7 +87,7 @@ func TestApplyResumeRepoConfig_CarriesCheckoutBranchIdentity(t *testing.T) {
 			}
 			session := &models.TaskSession{ID: "sess-1", TaskID: "task-1", RepositoryID: "repo-1", BaseBranch: "release/x"}
 			exec := newTestExecutor(t, &mockAgentManager{}, repo)
-			req := &LaunchAgentRequest{TaskID: "task-1", SessionID: "sess-1", ExecutorType: tc.executorType}
+			req := &LaunchAgentRequest{TaskID: "task-1", SessionID: "sess-1", ExecutorType: tc.executorType, WorkspaceReuseRequired: true}
 
 			if _, err := exec.applyResumeRepoConfig(context.Background(), &v1.Task{ID: "task-1"}, session, req, nil); err != nil {
 				t.Fatalf("applyResumeRepoConfig: %v", err)

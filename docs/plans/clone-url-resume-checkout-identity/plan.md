@@ -3,8 +3,10 @@ created: 2026-10-25
 status: implemented
 requirements:
   - REQ-TASKS-ADDITIONAL-SESSION-WORKSPACE-REUSE-001
+  - REQ-AGENTS-AGENT-RESUME-RUNTIME-RECOVERY-005
 system_design:
   - ../../specs/tasks/system-design/additional-session-workspace-reuse.md
+  - ../../specs/agents/system-design/session-recovery-failures.md
 legacy_specs: []
 ---
 
@@ -18,8 +20,9 @@ workspace and all inventory admission checks. This repairs issue #4786.
 
 ## Scope and approach
 
-The executor carries the sanitized checkout identity from one unambiguous
-task-repository attachment into the single-repository resume request. It
+For required workspace reuse, the executor carries the sanitized checkout
+identity from one unambiguous task-repository attachment into the single-repository
+resume request. Fresh materialization retains its base-branch inventory identity. It
 leaves `CheckoutBranch` unset so resume does not request another checkout.
 Missing or ambiguous attachments retain the existing behavior. Local executor
 requests retain their current branch handling.
@@ -31,6 +34,7 @@ configuration, recovery policy, or user instructions.
 ## Work orders
 
 - [x] [Task 01: Preserve checkout identity on resume](task-01-preserve-checkout-identity.md)
+- [x] [Task 02: Repair CI recovery and readiness races](task-02-repair-ci-recovery-readiness.md)
 
 ## Verification
 
@@ -52,9 +56,27 @@ continuity and introduces no new operator action or public contract.
 
 ## Results
 
-The focused resume, reuse, and inventory suite passed 371 tests and subtests.
+The focused resume, reuse, and inventory suite passed 372 tests and subtests.
 One existing test skipped because it requires a case-insensitive filesystem.
 The new regression passed with the race detector for all three executor types.
 Disabling the identity assignment reproduced the original mismatch in each case.
 Documentation coverage and diff whitespace checks passed. Normal commit hooks
 and hosted CI/reviews remain delivery gates for the final commit.
+
+## Review remediation
+
+CodeRabbit identified that a fresh materialization could be labelled with a
+checkout identity while preparing the base branch. Restrict the identity
+assignment to required workspace reuse. The new non-reuse regression failed
+with `feature-y` before this restriction and passed with `release-x` afterward.
+The focused race regressions passed after the correction. Final hosted checks
+and a fresh Claude review remain pending for the new commit.
+
+## CI remediation results
+
+The workspace and remote-recovery race suite passed 266 tests/subtests with
+one existing skip. Six mobile repeats, the desktop Quick Chat regression,
+the unchanged SSH interruption test, and the unchanged isolated Kubernetes
+stop/restart test passed with retries disabled. Go lint reported zero issues.
+The Kubernetes shard sequence replay and fresh hosted checks remain pending.
+See Task 02 for the Nix host prerequisite and temporary network rule.

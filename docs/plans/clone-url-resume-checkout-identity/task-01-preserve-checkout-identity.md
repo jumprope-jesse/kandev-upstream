@@ -23,7 +23,8 @@ checkout branches differ. Preserve attach-only preparation.
 
 ## Scope
 
-- Carry checkout identity only for clone-URL executors and one matching attachment.
+- Carry checkout identity only for required workspace reuse on clone-URL executors
+  with one matching attachment. Fresh materialization keeps its base identity.
 - Keep missing, ambiguous, and non-clone attachment handling unchanged.
 - Test resume preparation through canonical inventory admission and reuse.
 - Keep the production comment limited to the invariant it preserves.
@@ -73,13 +74,22 @@ inventory guard or request a new checkout.
 
 ## Results
 
-- GREEN: the focused resume, reuse, and inventory suite passed 371 tests and
+- GREEN: the focused resume, reuse, and inventory suite passed 372 tests and
   subtests, with one existing case-insensitive-filesystem skip.
 - GREEN: the new resume regression passed with the race detector for all three
   executor types.
 - RED mutation proof: removing only the identity assignment through a temporary
   Go overlay made all three cases fail with the original `release-x` inventory
-  mismatch. No production behavior changed during review remediation.
+  mismatch. The overlay changed no persisted source files.
 - GREEN: local documentation coverage and diff whitespace checks passed.
 - Hosted CI and current-head reviews remain externally pending until the
   delivered commit completes them.
+
+### Review remediation
+
+A non-reuse regression initially failed because fresh materialization published
+`feature-y` identity while preparing `release/x`. The assignment now requires
+`WorkspaceReuseRequired`, and the regression passes with `release-x` identity.
+The existing request-builder test now declares required reuse explicitly.
+Focused race checks passed after this correction. Hosted CI and a fresh Claude
+review remain pending for the new commit.

@@ -59,3 +59,27 @@ func TestPrepareResumeRepositorySettings_ReusesCheckoutBranchInventory(t *testin
 		})
 	}
 }
+
+func TestPrepareResumeRepositorySettings_MaterializationUsesBaseBranchIdentity(t *testing.T) {
+	repo := newMockRepository()
+	repo.repositories["repo-1"] = &models.Repository{
+		ID: "repo-1", Name: "repo", LocalPath: "/tmp/repo", RemoteURL: "https://example.com/repo.git",
+	}
+	repo.tasks["task-1"] = &models.Task{ID: "task-1"}
+	repo.taskRepositories["tr-1"] = &models.TaskRepository{
+		ID: "tr-1", TaskID: "task-1", RepositoryID: "repo-1",
+		BaseBranch: "release/x", CheckoutBranch: "feature/y",
+	}
+	session := &models.TaskSession{ID: "sess-1", TaskID: "task-1"}
+	exec := newTestExecutor(t, &mockAgentManager{}, repo)
+	req := &LaunchAgentRequest{TaskID: "task-1", SessionID: session.ID, ExecutorType: "local_docker"}
+	if _, _, _, err := exec.prepareResumeRepositorySettings(
+		context.Background(), &v1.Task{ID: "task-1"}, session, req, ResumeOptions{},
+	); err != nil {
+		t.Fatalf("prepareResumeRepositorySettings: %v", err)
+	}
+	spec, ok := topLevelLaunchRepoSpec(req)
+	if !ok || req.WorkspaceReuseRequired || launchRepoBranchIdentitySlug(spec) != "release-x" {
+		t.Fatalf("fresh materialization identity=%q reuse=%v, want release-x without reuse", launchRepoBranchIdentitySlug(spec), req.WorkspaceReuseRequired)
+	}
+}

@@ -2633,7 +2633,7 @@ func (e *Executor) applyResumeRepoConfig(
 	}
 	// Clone-URL resumes carry checkout-branch identity without requesting
 	// another checkout.
-	if req.BranchIdentitySlug == "" && e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType) {
+	if req.WorkspaceReuseRequired && req.BranchIdentitySlug == "" && e.capabilities != nil && e.capabilities.RequiresCloneURL(req.ExecutorType) {
 		req.BranchIdentitySlug = resumeCheckoutBranchIdentity(repositoryID, allRepos)
 	}
 
