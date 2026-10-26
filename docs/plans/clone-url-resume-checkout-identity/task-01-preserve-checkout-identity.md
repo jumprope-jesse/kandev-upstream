@@ -34,6 +34,9 @@ checkout branches differ. Preserve attach-only preparation.
 - `apps/backend/internal/orchestrator/executor/executor_resume.go`
 - `apps/backend/internal/orchestrator/executor/executor_resume_checkout_identity_test.go`
 - `apps/backend/internal/orchestrator/executor/executor_resume_checkout_reuse_test.go`
+- `apps/backend/internal/orchestrator/executor/executor_environment_reuse.go`
+- `apps/backend/internal/orchestrator/executor/executor_clone_url_reuse_identity.go`
+- `apps/backend/internal/orchestrator/executor/executor_resume_materialization_reuse_test.go`
 - This work order and its sibling plan.
 
 ## Acceptance
@@ -100,3 +103,24 @@ Review of head 69fe5a9c reported zero blockers and one suggestion. Reuse one
 local `requiresCloneURL` value for the base-branch and checkout-identity guards.
 This removes the repeated capability check and shortens both conditions.
 The existing branch and executor regressions verify the preserved behavior.
+
+### Fresh materialization followed by reuse
+
+CodeRabbit identified a second valid sequence: fresh resume materializes the
+base branch, then a later resume requests the configured checkout identity.
+The stateful regression reproduced the rejection for all three clone-URL
+executor types. It uses the real inventory projection between preparation calls.
+
+When the checkout request has no match, ordinary clone-URL reuse can select
+one active canonical row that exactly matches its base identity. The same
+inventory query supplies that row and the final validation. This fallback is
+limited to one top-level repository owned by the requesting task and executor.
+Explicit checkouts, inherited environments, inventory repair, and worktree
+requests retain their selection rules. Foreign branches, inactive rows,
+ambiguous rows, foreign environment IDs, and wrong placements remain refused.
+
+The expanded focused suite passed 394 tests/subtests with one filesystem skip.
+The fresh-materialization, checkout-identity, and request-builder regressions
+also passed with the race detector. The new sequence failed before the fallback
+for Docker, remote Docker, and Sprites, while the negative inventory cases stayed
+rejected. Fresh hosted checks and current-head reviews remain delivery gates.

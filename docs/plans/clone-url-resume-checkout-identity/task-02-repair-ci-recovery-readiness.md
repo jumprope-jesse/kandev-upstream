@@ -73,3 +73,23 @@ from the private Docker bridge to the fixture server. A temporary rule now
 permits fixture traffic from that owned bridge. The original SSH setup deadline
 is restored. The unchanged SSH interruption regression then passed with zero retries and
 its original setup deadline. Full Kubernetes shard validation remains pending.
+
+### Recovery publication ordering review
+
+CodeRabbit proposed fencing late recovery publication against runtime creation.
+The production call graph publishes pending owners during startup, before
+`publishReadiness` installs the real API and WebSocket router. The bootstrap
+handler rejects API and WebSocket traffic before that swap. Background retries
+consume existing pending entries and do not queue new owners. The proposed
+late-publication interleaving is therefore outside the production lifecycle.
+The existing startup guard/activation and pre-swap listener tests passed with
+the race detector. The thread was resolved with that evidence. No new mutex
+across runtime I/O is required.
+
+The full local Kubernetes shard replay could not validate the preceding test
+sequence. Its in-cluster backend never became ready. The native binary uses a
+Nix-store ELF interpreter that is absent from the Ubuntu fixture image; direct
+execution in that image confirms the missing-interpreter failure. Later workers
+also rejected a changed manifest identity after the commit completed. These
+results are incomplete evidence. Hosted CI must validate the full sequence.
+The owned daemon is stopped, and the private bridge and firewall rule are removed.

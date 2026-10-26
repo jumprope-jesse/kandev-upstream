@@ -80,3 +80,12 @@ the unchanged SSH interruption test, and the unchanged isolated Kubernetes
 stop/restart test passed with retries disabled. Go lint reported zero issues.
 The Kubernetes shard sequence replay and fresh hosted checks remain pending.
 See Task 02 for the Nix host prerequisite and temporary network rule.
+
+## Final identity sequence correction
+
+The follow-up regression covers fresh materialization and later reuse in one
+sequence. A validated canonical base slot now supplies identity when the
+configured checkout slot has no match. The expanded focused suite passed 394
+tests/subtests with one existing filesystem skip. Focused race checks passed.
+This retains strict rejection for foreign branches, inactive or duplicate rows,
+foreign environment IDs, wrong placements, and explicit checkout requests.
