@@ -96,6 +96,7 @@ var exactHostMethods = []exactMethod{
 	{method: exactCancelTaskTransitionMethod, capability: "host.v2.write:execution", description: "Cancel one observed pending workflow transition"},
 	{method: exactGetSessionModeMethod, capability: "host.v2.read:sessions", description: "Read provider-advertised modes for one session"},
 	{method: exactSetSessionModeMethod, capability: "host.v2.write:execution", description: "Set one provider-advertised safe mode on the observed execution"},
+	{method: exactLaunchFreshSessionMethod, capability: "host.v2.write:execution", description: "Start one fresh session on an existing card with an initial prompt and optional primary promotion"},
 	{method: exactRespondPermissionMethod, capability: "host.v2.write:interactions", description: "Relay a human-authorized permission response to one pending request"},
 	{method: exactAnswerClarificationMethod, capability: "host.v2.write:interactions", description: "Relay a human-authorized answer to one pending clarification"},
 	{method: exactTaskDirectiveIssueMethod, capability: exactTaskDirectiveCapability, description: "Record one short-lived task directive"},
@@ -251,6 +252,9 @@ func (h *pluginHost) specializedOperationUnavailableReason(
 		return reason
 	}
 	if reason := exactExecutionUnavailableReason(operation.Method, commandStoreAvailable, executionControllerAvailable); reason != "" {
+		return reason
+	}
+	if reason := exactSessionLaunchUnavailableReason(operation.Method, h, commandStoreAvailable); reason != "" {
 		return reason
 	}
 	if reason := exactInteractionUnavailableReason(operation.Method, h, commandStoreAvailable, interactionResponderAvailable); reason != "" {

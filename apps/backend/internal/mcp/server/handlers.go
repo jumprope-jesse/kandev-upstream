@@ -664,6 +664,8 @@ func (s *Server) spawnSessionHandler() server.ToolHandlerFunc {
 		}
 		copyOptionalStringArg(payload, req, agentProfileIDArg)
 		copyOptionalStringArg(payload, req, "name")
+		copyOptionalStringArg(payload, req, "idempotency_key")
+		copyOptionalSpawnPrimaryArgs(payload, req)
 		var result map[string]interface{}
 		if err := s.backend.RequestPayload(ctx, ws.ActionMCPSpawnSession, payload, &result); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
@@ -762,6 +764,19 @@ func buildTaskConversationPayload(req mcp.CallToolRequest, taskID string) map[st
 func copyOptionalStringArg(payload map[string]interface{}, req mcp.CallToolRequest, key string) {
 	if value := req.GetString(key, ""); value != "" {
 		payload[key] = value
+	}
+}
+
+// copyOptionalSpawnPrimaryArgs forwards make_primary and
+// expected_primary_session_id only when the caller supplied them, so an empty
+// expected_primary_session_id stays distinguishable from an omitted one.
+func copyOptionalSpawnPrimaryArgs(payload map[string]interface{}, req mcp.CallToolRequest) {
+	args := req.GetArguments()
+	if makePrimary, ok := args["make_primary"].(bool); ok {
+		payload["make_primary"] = makePrimary
+	}
+	if expected, ok := args["expected_primary_session_id"].(string); ok {
+		payload["expected_primary_session_id"] = expected
 	}
 }
 

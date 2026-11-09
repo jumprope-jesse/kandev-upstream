@@ -104,7 +104,7 @@ func (f *fakeExactExecutionController) SetSessionMode(_ context.Context, install
 	return in.ModeID, nil
 }
 
-func newExactExecutionHost(t *testing.T, controller *fakeExactExecutionController) (*pluginHost, string) {
+func newExactExecutionHost(t *testing.T, controller exactExecutionController) (*pluginHost, string) {
 	t.Helper()
 	connection, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {

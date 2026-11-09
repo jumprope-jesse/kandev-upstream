@@ -45,7 +45,7 @@ message_task_kandev(task_id="<full UUID>", prompt="<message text>")
 By default, the message goes to the task's primary session. To target another session:
 
 - Pass its `session_id` to `message_task_kandev`. This also works for a sibling session on your task.
-- `spawn_session_kandev` returns `{task_id, session_id, state, agent_profile_id}`. Pass its `session_id` to `message_task_kandev`.
+- `spawn_session_kandev` returns `{task_id, session_id, state, agent_profile_id}`. Pass its `session_id` to `message_task_kandev`. With `idempotency_key` it is an exact, retry-safe launch whose prompt is the first user instruction; it then returns `{task_id, operation_id, session_id, outcome, prompt_status, primary_status, primary_reason, replayed}` and accepts `make_primary` and `expected_primary_session_id`. See [Automation and MCP](automation-and-mcp.md).
 - The returned `agent_profile_id` is the effective profile after workflow resolution. A pinned step profile wins, then the workflow default. Without a workflow profile, an explicit profile wins before normal inheritance rules.
 
 Delivery behaviour depends on the target session's state at the moment of the call:

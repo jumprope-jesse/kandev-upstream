@@ -112,6 +112,10 @@ service Host {
   rpc CancelPendingTaskTransitionExact(CancelPendingTaskTransitionExactRequest) returns (CancelPendingTaskTransitionExactResponse);
   rpc GetSessionModeContextExact(GetSessionModeContextExactRequest) returns (GetSessionModeContextExactResponse);
   rpc SetSessionModeExact(SetSessionModeExactRequest) returns (SetSessionModeExactResponse);
+  // LaunchFreshSessionExact starts one fresh session on an existing task with
+  // the prompt as its first user instruction. A Host that predates this RPC
+  // answers Unimplemented.
+  rpc LaunchFreshSessionExact(LaunchFreshSessionExactRequest) returns (LaunchFreshSessionExactResponse);
   // Human interaction responses require a Host-issued single-use receipt from
   // the authenticated native UI, bound to the exact interaction revision and
   // response payload.
@@ -1191,6 +1195,35 @@ message EnsureTaskRunExactResponse {
   string session_id = 2;
   string session_state = 3;
   string execution_id = 4;
+}
+
+message LaunchFreshSessionExactRequest {
+  string request_id = 1;
+  string workspace_id = 2;
+  string task_id = 3;
+  string idempotency_key = 4;
+  string expected_task_resource_version = 5;
+  uint64 approval_revision = 6;
+  string manifest_digest = 7;
+  string management_instance_key = 8;
+  int64 expected_claim_generation = 9;
+  string prompt = 10;
+  string agent_profile_id = 11;
+  bool make_primary = 12;
+  // Presence asserts the baseline primary session; an empty value asserts
+  // that the task has no primary session.
+  optional string expected_primary_session_id = 13;
+}
+
+message LaunchFreshSessionExactResponse {
+  HostCommandResult result = 1;
+  string operation_id = 2;
+  string session_id = 3;
+  string session_state = 4;
+  string outcome = 5;
+  string prompt_status = 6;
+  string primary_status = 7;
+  string primary_reason = 8;
 }
 
 message StopTaskRunExactRequest {

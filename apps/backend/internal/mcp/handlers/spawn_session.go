@@ -23,6 +23,10 @@ type spawnSessionRequest struct {
 	Name            string `json:"name"`
 	SenderTaskID    string `json:"sender_task_id"`
 	SenderSessionID string `json:"sender_session_id"`
+
+	IdempotencyKey           string  `json:"idempotency_key"`
+	MakePrimary              bool    `json:"make_primary"`
+	ExpectedPrimarySessionID *string `json:"expected_primary_session_id"`
 }
 
 // handleSpawnSession starts an ADDITIONAL agent session on an existing task via
@@ -38,6 +42,10 @@ func (h *Handlers) handleSpawnSession(ctx context.Context, msg *ws.Message) (*ws
 	}
 	if errResp := h.authorizeSpawnTarget(ctx, &req, msg); errResp != nil {
 		return errResp, nil
+	}
+
+	if req.IdempotencyKey != "" {
+		return h.handleExactSpawnSession(ctx, &req, msg)
 	}
 
 	spawner := h.resolveSpawnerSession(ctx, &req)
@@ -129,6 +137,14 @@ func (h *Handlers) validateSpawnRequest(req *spawnSessionRequest, msg *ws.Messag
 	if req.SenderTaskID == "" {
 		return wsError(msg.ID, msg.Action, ws.ErrorCodeValidation,
 			"sender_task_id is required (the calling agent's MCP server must supply this)")
+	}
+	if req.IdempotencyKey == "" && (req.MakePrimary || req.ExpectedPrimarySessionID != nil) {
+		return wsError(msg.ID, msg.Action, ws.ErrorCodeValidation,
+			"make_primary and expected_primary_session_id require idempotency_key")
+	}
+	if req.IdempotencyKey != "" && strings.TrimSpace(req.Name) != "" {
+		return wsError(msg.ID, msg.Action, ws.ErrorCodeValidation,
+			"name is not supported with idempotency_key; rename the session after it starts")
 	}
 	return nil
 }

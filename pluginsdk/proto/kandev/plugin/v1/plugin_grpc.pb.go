@@ -803,6 +803,7 @@ const (
 	Host_CancelPendingTaskTransitionExact_FullMethodName           = "/kandev.plugin.v1.Host/CancelPendingTaskTransitionExact"
 	Host_GetSessionModeContextExact_FullMethodName                 = "/kandev.plugin.v1.Host/GetSessionModeContextExact"
 	Host_SetSessionModeExact_FullMethodName                        = "/kandev.plugin.v1.Host/SetSessionModeExact"
+	Host_LaunchFreshSessionExact_FullMethodName                    = "/kandev.plugin.v1.Host/LaunchFreshSessionExact"
 	Host_RespondPermissionExact_FullMethodName                     = "/kandev.plugin.v1.Host/RespondPermissionExact"
 	Host_AnswerClarificationExact_FullMethodName                   = "/kandev.plugin.v1.Host/AnswerClarificationExact"
 	Host_ListWorkspacesExact_FullMethodName                        = "/kandev.plugin.v1.Host/ListWorkspacesExact"
@@ -943,6 +944,10 @@ type HostClient interface {
 	CancelPendingTaskTransitionExact(ctx context.Context, in *CancelPendingTaskTransitionExactRequest, opts ...grpc.CallOption) (*CancelPendingTaskTransitionExactResponse, error)
 	GetSessionModeContextExact(ctx context.Context, in *GetSessionModeContextExactRequest, opts ...grpc.CallOption) (*GetSessionModeContextExactResponse, error)
 	SetSessionModeExact(ctx context.Context, in *SetSessionModeExactRequest, opts ...grpc.CallOption) (*SetSessionModeExactResponse, error)
+	// LaunchFreshSessionExact starts one fresh session on an existing task with
+	// the prompt as its first user instruction. A Host that predates this RPC
+	// answers Unimplemented.
+	LaunchFreshSessionExact(ctx context.Context, in *LaunchFreshSessionExactRequest, opts ...grpc.CallOption) (*LaunchFreshSessionExactResponse, error)
 	// Human interaction responses require a Host-issued single-use receipt from
 	// the authenticated native UI, bound to the exact interaction revision and
 	// response payload.
@@ -1501,6 +1506,16 @@ func (c *hostClient) SetSessionModeExact(ctx context.Context, in *SetSessionMode
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetSessionModeExactResponse)
 	err := c.cc.Invoke(ctx, Host_SetSessionModeExact_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostClient) LaunchFreshSessionExact(ctx context.Context, in *LaunchFreshSessionExactRequest, opts ...grpc.CallOption) (*LaunchFreshSessionExactResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LaunchFreshSessionExactResponse)
+	err := c.cc.Invoke(ctx, Host_LaunchFreshSessionExact_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2230,6 +2245,10 @@ type HostServer interface {
 	CancelPendingTaskTransitionExact(context.Context, *CancelPendingTaskTransitionExactRequest) (*CancelPendingTaskTransitionExactResponse, error)
 	GetSessionModeContextExact(context.Context, *GetSessionModeContextExactRequest) (*GetSessionModeContextExactResponse, error)
 	SetSessionModeExact(context.Context, *SetSessionModeExactRequest) (*SetSessionModeExactResponse, error)
+	// LaunchFreshSessionExact starts one fresh session on an existing task with
+	// the prompt as its first user instruction. A Host that predates this RPC
+	// answers Unimplemented.
+	LaunchFreshSessionExact(context.Context, *LaunchFreshSessionExactRequest) (*LaunchFreshSessionExactResponse, error)
 	// Human interaction responses require a Host-issued single-use receipt from
 	// the authenticated native UI, bound to the exact interaction revision and
 	// response payload.
@@ -2499,6 +2518,9 @@ func (UnimplementedHostServer) GetSessionModeContextExact(context.Context, *GetS
 }
 func (UnimplementedHostServer) SetSessionModeExact(context.Context, *SetSessionModeExactRequest) (*SetSessionModeExactResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSessionModeExact not implemented")
+}
+func (UnimplementedHostServer) LaunchFreshSessionExact(context.Context, *LaunchFreshSessionExactRequest) (*LaunchFreshSessionExactResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LaunchFreshSessionExact not implemented")
 }
 func (UnimplementedHostServer) RespondPermissionExact(context.Context, *RespondPermissionExactRequest) (*RespondPermissionExactResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RespondPermissionExact not implemented")
@@ -3465,6 +3487,24 @@ func _Host_SetSessionModeExact_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HostServer).SetSessionModeExact(ctx, req.(*SetSessionModeExactRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Host_LaunchFreshSessionExact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaunchFreshSessionExactRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServer).LaunchFreshSessionExact(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Host_LaunchFreshSessionExact_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServer).LaunchFreshSessionExact(ctx, req.(*LaunchFreshSessionExactRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4788,6 +4828,10 @@ var Host_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetSessionModeExact",
 			Handler:    _Host_SetSessionModeExact_Handler,
+		},
+		{
+			MethodName: "LaunchFreshSessionExact",
+			Handler:    _Host_LaunchFreshSessionExact_Handler,
 		},
 		{
 			MethodName: "RespondPermissionExact",

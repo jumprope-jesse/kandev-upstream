@@ -577,6 +577,43 @@ func (r *Repository) runMigrations(ctx context.Context) error {
 		CREATE INDEX IF NOT EXISTS idx_exact_task_command_operations_task
 			ON exact_task_command_operations(workspace_id, task_id, created_at)`)
 
+	// An exact session launch operation is created before its session so a
+	// retry or a restart can finish the launch from this row alone. It has no
+	// foreign key for the same reason exact_task_command_operations has none.
+	_ = r.migrate.Apply("exact_session_launch_operations.table", `
+		CREATE TABLE IF NOT EXISTS exact_session_launch_operations (
+			operation_id TEXT PRIMARY KEY,
+			principal_scope TEXT NOT NULL,
+			workspace_id TEXT NOT NULL,
+			idempotency_key TEXT NOT NULL,
+			request_digest TEXT NOT NULL,
+			task_id TEXT NOT NULL,
+			session_id TEXT NOT NULL,
+			frozen_input TEXT NOT NULL,
+			baseline_primary_session_id TEXT NOT NULL DEFAULT '',
+			baseline_asserted INTEGER NOT NULL DEFAULT 0,
+			baseline_activity_marker TEXT NOT NULL DEFAULT '',
+			make_primary INTEGER NOT NULL DEFAULT 0,
+			phase TEXT NOT NULL,
+			primary_status TEXT NOT NULL,
+			primary_reason TEXT NOT NULL DEFAULT '',
+			prompt_status TEXT NOT NULL,
+			error_code TEXT NOT NULL DEFAULT '',
+			error_message TEXT NOT NULL DEFAULT '',
+			owner_token TEXT NOT NULL DEFAULT '',
+			owner_epoch BIGINT NOT NULL DEFAULT 0,
+			lease_expires_at TIMESTAMP,
+			created_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL,
+			completed_at TIMESTAMP
+		)`)
+	_ = r.migrate.Apply("exact_session_launch_operations.key", `
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_exact_session_launch_operations_key
+			ON exact_session_launch_operations(principal_scope, workspace_id, idempotency_key)`)
+	_ = r.migrate.Apply("exact_session_launch_operations.task", `
+		CREATE INDEX IF NOT EXISTS idx_exact_session_launch_operations_task
+			ON exact_session_launch_operations(task_id, phase)`)
+
 	// A task has at most one current management claim. Released claims remain
 	// as rows with an empty owner so the monotonically increasing generation
 	// cannot be reset by a later acquisition. The append-only history is kept

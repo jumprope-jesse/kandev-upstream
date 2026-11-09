@@ -101,6 +101,11 @@ func (e *Executor) defaultExecutorID(ctx context.Context, workspaceID string) st
 	return strings.TrimSpace(*workspace.DefaultExecutorID)
 }
 
+// DefaultExecutorID returns the workspace default executor, or "" when none is set.
+func (e *Executor) DefaultExecutorID(ctx context.Context, workspaceID string) string {
+	return e.defaultExecutorID(ctx, workspaceID)
+}
+
 // executorConfig holds resolved executor configuration.
 type executorConfig struct {
 	ExecutorID     string

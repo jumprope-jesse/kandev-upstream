@@ -51,6 +51,9 @@ func (s *Service) deferCeilingRefusal(
 	ctx context.Context, taskID, sessionID string, kind models.CeilingLaunchKind, payload map[string]interface{},
 	reasonCode string, population int, populationKnown bool, ceiling int,
 ) error {
+	if exactLaunchCeilingRefusal(ctx) {
+		return exactLaunchCeilingRefusedError(reasonCode)
+	}
 	// The admission lock protects only the read/merge/CAS sequence. State
 	// repair, card surfacing, and task publication can invoke other runtime
 	// paths, so they run after the durable record is released.

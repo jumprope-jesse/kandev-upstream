@@ -343,74 +343,208 @@ func (s *Service) PrepareTaskSession(ctx context.Context, taskID string, agentPr
 		zap.String("workflow_step_id", workflowStepID),
 		zap.Bool("launch_workspace", launchWorkspace))
 
+	in, err := s.resolvePrepareInputs(ctx, taskID, agentProfileID, executorID, executorProfileID, workflowStepID)
+	if err != nil {
+		return "", err
+	}
+	sessionID, err := s.prepareTaskSessionResolved(ctx, in)
+	if err != nil {
+		return "", err
+	}
+
+	// Launch workspace infrastructure (agentctl) in the background so the WS response
+	// returns the session ID immediately. The frontend navigates to the session page
+	// and shows preparation progress via executor.prepare.progress WS events.
+	if launchWorkspace {
+		go s.launchPreparedSessionWorkspace(sessionID, in)
+	}
+
+	s.logger.Info("task session prepared",
+		zap.String("task_id", taskID),
+		zap.String("session_id", sessionID))
+
+	return sessionID, nil
+}
+
+// launchPreparedSessionWorkspace launches the workspace of a prepared session
+// without starting its agent.
+func (s *Service) launchPreparedSessionWorkspace(sessionID string, in *resolvedPrepareInputs) {
+	bgCtx := context.Background()
+	task, taskID := in.task, in.task.ID
+	launchProfileID := in.agentProfileID
+	// This workspace-only launch (StartAgent unset) never starts the
+	// agent, so it never reaches "active" itself — the eventual
+	// StartCreatedSession call does that. But if a route was claimed
+	// below and this launch then fails, nothing else will ever move
+	// it off "starting" or "retrying"; the deferred guard covers both
+	// failure points uniformly. It only fires while the route is
+	// still "starting" or "retrying" (see Engine.MarkActionRequired),
+	// so it is a no-op if a concurrent real launch already marked it
+	// active.
+	var claimedRouteGeneration int64
+	launchOwned := false
+	defer func() {
+		if claimedRouteGeneration > 0 && !launchOwned {
+			s.markDynamicRouteActionRequired(bgCtx, sessionID, claimedRouteGeneration, "prepared_session_launch_failed")
+		}
+	}()
+	if s.profileExecutionResolver != nil {
+		route, routeErr := s.resolvePreparedSessionDynamicRoute(
+			bgCtx, sessionID, launchProfileID, in.preserveOfficeProfile,
+		)
+		if routeErr != nil {
+			s.failPreparedSessionRoute(bgCtx, taskID, sessionID, route, routeErr)
+			return
+		}
+		launchProfileID = route.launchProfileID
+		claimedRouteGeneration = route.claimedRouteGeneration
+	}
+	prepExec, launchErr := s.executor.LaunchPreparedSession(bgCtx, task, sessionID, executor.LaunchOptions{AgentProfileID: launchProfileID, ExecutorID: in.executorID, WorkflowStepID: in.workflowStepID})
+	if launchErr != nil {
+		// LaunchAgent failures persist FAILED in the executor. Earlier
+		// workspace failures return here and are recorded through the same
+		// session-level recovery claim.
+		launchErr = s.handleSessionLaunchFailure(bgCtx, taskID, sessionID, launchErr)
+		s.logger.Warn("failed to launch workspace for prepared session (file browsing may be unavailable)",
+			zap.String("task_id", taskID),
+			zap.String("session_id", sessionID),
+			zap.Error(launchErr))
+		return
+	}
+	launchOwned = true
+	s.markWorkspaceGroupMaterialized(bgCtx, taskID)
+	if prepExec != nil {
+		s.ensureSessionPRWatch(bgCtx, taskID, prepExec.SessionID, prepExec.WorktreeBranch)
+	}
+}
+
+// failPreparedSessionRoute records why a prepared session's dynamic route
+// could not be resolved or persisted.
+func (s *Service) failPreparedSessionRoute(
+	ctx context.Context, taskID, sessionID string, route preparedSessionDynamicRoute, routeErr error,
+) {
+	launchSession := route.session
+	switch {
+	case launchSession == nil:
+		s.logger.Warn("failed to reload prepared session for dynamic route resolution",
+			zap.String("task_id", taskID), zap.String("session_id", sessionID), zap.Error(routeErr))
+	case route.resolutionErr != nil:
+		s.recordDynamicRouteResolutionFailure(ctx, launchSession, routeErr)
+		s.logger.Warn("failed to resolve dynamic route for prepared session",
+			zap.String("task_id", taskID), zap.String("session_id", sessionID), zap.Error(routeErr))
+	default:
+		s.logger.Warn("failed to persist dynamic route for prepared session",
+			zap.String("task_id", taskID), zap.String("session_id", sessionID), zap.Error(routeErr))
+	}
+	_ = s.handleSessionLaunchFailure(ctx, taskID, sessionID, routeErr, launchSession)
+}
+
+// resolvedPrepareInputs is the fully defaulted launch input of PrepareTaskSession.
+type resolvedPrepareInputs struct {
+	task                  *v1.Task
+	agentProfileID        string
+	executorID            string
+	executorProfileID     string
+	workflowStepID        string
+	preserveOfficeProfile bool
+}
+
+// resolvePrepareInputs applies the task-metadata, parent, workflow-step and
+// Office defaults that PrepareTaskSession uses for empty caller fields.
+func (s *Service) resolvePrepareInputs(ctx context.Context, taskID, agentProfileID, executorID, executorProfileID, workflowStepID string) (*resolvedPrepareInputs, error) {
 	// Fetch the task to get workspace info
 	task, err := s.scheduler.GetTask(ctx, taskID)
 	if err != nil {
 		s.logger.Error("failed to fetch task for session preparation",
 			zap.String("task_id", taskID),
 			zap.Error(err))
-		return "", err
+		return nil, err
 	}
 	// Resolve agent/executor profile from task metadata if not explicitly provided
-	if agentProfileID == "" {
-		if v, ok := task.Metadata[models.MetaKeyAgentProfileID].(string); ok && v != "" {
-			agentProfileID = v
-		}
-	}
-	if executorID == "" {
-		if v, ok := task.Metadata[models.MetaKeyExecutorID].(string); ok && v != "" {
-			executorID = v
-		}
-	}
-	if executorProfileID == "" {
-		if v, ok := task.Metadata[models.MetaKeyExecutorProfileID].(string); ok && v != "" {
-			executorProfileID = v
-		}
-	}
+	agentProfileID = firstNonEmptyString(agentProfileID, metadataString(task.Metadata, models.MetaKeyAgentProfileID))
+	executorID = firstNonEmptyString(executorID, metadataString(task.Metadata, models.MetaKeyExecutorID))
+	executorProfileID = firstNonEmptyString(executorProfileID, metadataString(task.Metadata, models.MetaKeyExecutorProfileID))
 
 	// Inherit agent/executor profile from parent task's primary session when not
 	// explicitly provided. This covers subtasks created with start_agent=false that
 	// are later opened manually from the UI. We check each field independently so
 	// that a caller providing only some fields still gets the rest filled in.
 	if (agentProfileID == "" || executorProfileID == "" || executorID == "") && task.ParentID != "" {
-		agentProfileID, executorProfileID, executorID = s.inheritFromParentSession(
-			ctx, task.ParentID, agentProfileID, executorProfileID, executorID,
+		agentProfileID, executorProfileID, executorID = s.inheritPrepareDefaultsFromParent(
+			ctx, task, agentProfileID, executorProfileID, executorID,
 		)
-
-		// Fall back to workspace defaults for agent profile (subtasks only —
-		// regular tasks resolve defaults downstream in the executor layer).
-		if agentProfileID == "" {
-			workspace, err := s.repo.GetWorkspace(ctx, task.WorkspaceID)
-			if err == nil && workspace != nil && workspace.DefaultAgentProfileID != nil && *workspace.DefaultAgentProfileID != "" {
-				agentProfileID = *workspace.DefaultAgentProfileID
-			}
-		}
-		// An inherit_parent child must keep the parent's effective executor. An
-		// empty executor here is meaningful: it selects the local executor when
-		// the parent also used the workspace default. For other subtasks, keep
-		// the historical worktree default so they receive an isolated checkout.
-		if executorID == "" && executorProfileID == "" && !isInheritParentWorkspace(task) {
-			executorID = models.ExecutorIDWorktree
-		}
 	}
 
-	// Fall back to the task's current workflow step when the caller didn't provide one.
-	// This ensures sessions created via the kanban card (which doesn't send workflow_step_id)
-	// inherit the task's step and participate in workflow events.
-	dbTask, dbTaskErr := s.repo.GetTask(ctx, taskID)
-	if workflowStepID == "" {
-		if dbTaskErr != nil {
-			s.logger.Warn("failed to fetch task for workflow step fallback",
-				zap.String("task_id", taskID),
-				zap.Error(dbTaskErr))
-		} else if dbTask.WorkflowStepID != "" {
-			workflowStepID = dbTask.WorkflowStepID
-		}
-	}
 	preservePreparedOfficeProfile := false
+	dbTask, dbTaskErr := s.repo.GetTask(ctx, taskID)
+	workflowStepID = s.prepareWorkflowStepFallback(taskID, workflowStepID, dbTask, dbTaskErr)
 	if dbTaskErr == nil {
 		agentProfileID, preservePreparedOfficeProfile = s.officeLaunchProfileForPrepare(ctx, dbTask, agentProfileID)
 	}
+	return &resolvedPrepareInputs{
+		task: task, agentProfileID: agentProfileID, executorID: executorID,
+		executorProfileID: executorProfileID, workflowStepID: workflowStepID,
+		preserveOfficeProfile: preservePreparedOfficeProfile,
+	}, nil
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// inheritPrepareDefaultsFromParent fills the empty profile fields of a subtask
+// from its parent's primary session and the workspace defaults.
+func (s *Service) inheritPrepareDefaultsFromParent(
+	ctx context.Context, task *v1.Task, agentProfileID, executorProfileID, executorID string,
+) (string, string, string) {
+	agentProfileID, executorProfileID, executorID = s.inheritFromParentSession(
+		ctx, task.ParentID, agentProfileID, executorProfileID, executorID,
+	)
+
+	// Fall back to workspace defaults for agent profile (subtasks only —
+	// regular tasks resolve defaults downstream in the executor layer).
+	if agentProfileID == "" {
+		workspace, err := s.repo.GetWorkspace(ctx, task.WorkspaceID)
+		if err == nil && workspace != nil && workspace.DefaultAgentProfileID != nil && *workspace.DefaultAgentProfileID != "" {
+			agentProfileID = *workspace.DefaultAgentProfileID
+		}
+	}
+	// An inherit_parent child must keep the parent's effective executor. An
+	// empty executor here is meaningful: it selects the local executor when
+	// the parent also used the workspace default. For other subtasks, keep
+	// the historical worktree default so they receive an isolated checkout.
+	if executorID == "" && executorProfileID == "" && !isInheritParentWorkspace(task) {
+		executorID = models.ExecutorIDWorktree
+	}
+	return agentProfileID, executorProfileID, executorID
+}
+
+// prepareWorkflowStepFallback returns the task's current workflow step when the
+// caller didn't provide one, so sessions created via the kanban card (which
+// doesn't send workflow_step_id) participate in workflow events.
+func (s *Service) prepareWorkflowStepFallback(taskID, workflowStepID string, dbTask *models.Task, dbTaskErr error) string {
+	if workflowStepID != "" {
+		return workflowStepID
+	}
+	if dbTaskErr != nil {
+		s.logger.Warn("failed to fetch task for workflow step fallback",
+			zap.String("task_id", taskID),
+			zap.Error(dbTaskErr))
+		return ""
+	}
+	return dbTask.WorkflowStepID
+}
+
+// prepareTaskSessionResolved validates the resolved profile and creates the
+// CREATED session row with its inherited environment.
+func (s *Service) prepareTaskSessionResolved(ctx context.Context, in *resolvedPrepareInputs) (string, error) {
+	task, taskID := in.task, in.task.ID
+	agentProfileID, executorID, executorProfileID, workflowStepID := in.agentProfileID, in.executorID, in.executorProfileID, in.workflowStepID
 	if s.profileExecutionResolver != nil {
 		if err := s.profileExecutionResolver.ValidateProfile(ctx, agentProfileID); err != nil {
 			return "", err
@@ -439,78 +573,6 @@ func (s *Service) PrepareTaskSession(ctx context.Context, taskID string, agentPr
 	if sessionCreated {
 		s.publishSessionCreatedEvent(ctx, taskID, sessionID, workflowStepID)
 	}
-
-	if launchWorkspace {
-		// Launch workspace infrastructure (agentctl) in the background so the WS response
-		// returns the session ID immediately. The frontend navigates to the session page
-		// and shows preparation progress via executor.prepare.progress WS events.
-		go func() {
-			bgCtx := context.Background()
-			launchProfileID := agentProfileID
-			// This workspace-only launch (StartAgent unset) never starts the
-			// agent, so it never reaches "active" itself — the eventual
-			// StartCreatedSession call does that. But if a route was claimed
-			// below and this launch then fails, nothing else will ever move
-			// it off "starting" or "retrying"; the deferred guard covers both
-			// failure points uniformly. It only fires while the route is
-			// still "starting" or "retrying" (see Engine.MarkActionRequired),
-			// so it is a no-op if a concurrent real launch already marked it
-			// active.
-			var claimedRouteGeneration int64
-			launchOwned := false
-			defer func() {
-				if claimedRouteGeneration > 0 && !launchOwned {
-					s.markDynamicRouteActionRequired(bgCtx, sessionID, claimedRouteGeneration, "prepared_session_launch_failed")
-				}
-			}()
-			if s.profileExecutionResolver != nil {
-				route, routeErr := s.resolvePreparedSessionDynamicRoute(
-					bgCtx, sessionID, launchProfileID, preservePreparedOfficeProfile,
-				)
-				if routeErr != nil {
-					launchSession := route.session
-					switch {
-					case launchSession == nil:
-						s.logger.Warn("failed to reload prepared session for dynamic route resolution",
-							zap.String("task_id", taskID), zap.String("session_id", sessionID), zap.Error(routeErr))
-					case route.resolutionErr != nil:
-						s.recordDynamicRouteResolutionFailure(bgCtx, launchSession, routeErr)
-						s.logger.Warn("failed to resolve dynamic route for prepared session",
-							zap.String("task_id", taskID), zap.String("session_id", sessionID), zap.Error(routeErr))
-					default:
-						s.logger.Warn("failed to persist dynamic route for prepared session",
-							zap.String("task_id", taskID), zap.String("session_id", sessionID), zap.Error(routeErr))
-					}
-					_ = s.handleSessionLaunchFailure(bgCtx, taskID, sessionID, routeErr, launchSession)
-					return
-				}
-				launchProfileID = route.launchProfileID
-				claimedRouteGeneration = route.claimedRouteGeneration
-			}
-			prepExec, launchErr := s.executor.LaunchPreparedSession(bgCtx, task, sessionID, executor.LaunchOptions{AgentProfileID: launchProfileID, ExecutorID: executorID, WorkflowStepID: workflowStepID})
-			if launchErr != nil {
-				// LaunchAgent failures persist FAILED in the executor. Earlier
-				// workspace failures return here and are recorded through the same
-				// session-level recovery claim.
-				launchErr = s.handleSessionLaunchFailure(bgCtx, taskID, sessionID, launchErr)
-				s.logger.Warn("failed to launch workspace for prepared session (file browsing may be unavailable)",
-					zap.String("task_id", taskID),
-					zap.String("session_id", sessionID),
-					zap.Error(launchErr))
-				return
-			}
-			launchOwned = true
-			s.markWorkspaceGroupMaterialized(bgCtx, taskID)
-			if prepExec != nil {
-				s.ensureSessionPRWatch(bgCtx, taskID, prepExec.SessionID, prepExec.WorktreeBranch)
-			}
-		}()
-	}
-
-	s.logger.Info("task session prepared",
-		zap.String("task_id", taskID),
-		zap.String("session_id", sessionID))
-
 	return sessionID, nil
 }
 
@@ -785,8 +847,11 @@ type startCreatedSessionOptions struct {
 	onInitialPromptAdmissionFailed func(error)
 	skipTaskDescriptionFallback    bool
 	promptAlreadyComposed          bool
-	noInitialTurn                  bool
-	retryPrompt                    string
+	// profileFrozen skips workflow step/default profile substitution: the
+	// caller supplied the exact profile that was frozen at admission.
+	profileFrozen bool
+	noInitialTurn bool
+	retryPrompt   string
 	// canvasGuidanceResolved carries the server-side capability projection
 	// from message admission. When false, this launch resolves the capability
 	// locally because no earlier producer has made a trusted decision.
@@ -876,7 +941,7 @@ func (s *Service) startCreatedSession(
 
 	startPayload := seam2StartCreatedPayload(sessionID, agentProfileID, prompt, skipMessageRecord, planMode, autoStart, attachments, references, promptReferenceContext, options)
 	startPayload = s.enrichCeilingLaunchPayload(ctx, taskID, sessionID, startPayload)
-	seam2Res, deferred, err := s.admitOrDeferSeam2(ctx, taskID, sessionID, originFromAutoStart(autoStart), startPayload)
+	seam2Res, deferred, err := s.admitOrDeferSeam2(ctx, taskID, sessionID, launchOriginForStart(ctx, autoStart), startPayload)
 	if err != nil {
 		return nil, err
 	}
@@ -904,9 +969,11 @@ func (s *Service) startCreatedSession(
 	// inherits the workflow's default agent. resolveEffectiveAgentProfile keeps
 	// the caller profile only when neither a step override nor a workflow
 	// default applies; either of those overrides a non-empty caller.
-	effectiveProfileID, err = s.resolveEffectiveAgentProfile(ctx, taskID, "", effectiveProfileID)
-	if err != nil {
-		return nil, err
+	if !options.profileFrozen {
+		effectiveProfileID, err = s.resolveEffectiveAgentProfile(ctx, taskID, "", effectiveProfileID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if effectiveProfileID == "" {

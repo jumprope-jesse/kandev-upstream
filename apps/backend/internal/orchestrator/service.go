@@ -759,6 +759,9 @@ type passthroughDispatchToken struct {
 
 // Service is the main orchestrator service
 type Service struct {
+	// exactLaunch owns the workers and sweep behind exact fresh-session launches.
+	exactLaunch exactLaunchRunner
+
 	autonomousExecutorContext func(context.Context, string, string) (context.Context, error)
 	config                    ServiceConfig
 	logger                    *logger.Logger
@@ -3601,6 +3604,7 @@ func (s *Service) startBackgroundRecovery(ctx context.Context) {
 	// before tearing down repo / agentManager.
 	s.startIdleSessionReaper(ctx)
 	s.startCeilingSweeper(ctx)
+	s.startExactLaunchRecovery(ctx)
 	if lifecycleCtx := s.recoveryLifecycleContext(); lifecycleCtx != nil {
 		s.startSilentRestoreRecovery(lifecycleCtx)
 	}
@@ -3672,6 +3676,7 @@ func (s *Service) Stop() error {
 	s.stopDynamicPolicyRecovery()
 	s.stopLifecycleSweepAsync()
 	s.stopOrphanReentryWorkers()
+	s.stopExactLaunchRecovery()
 
 	// Stop components in reverse order
 	var errs []error

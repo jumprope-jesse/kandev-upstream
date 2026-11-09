@@ -82,6 +82,9 @@ func (s *Service) admitOrDeferSessionKeyedLaunch(
 			populationKnown: decision.populationKnown, ceiling: decision.ceiling,
 		}, false, nil
 	}
+	if exactLaunchCeilingRefusal(ctx) {
+		return nil, false, exactLaunchCeilingRefusedError(decision.reasonCode)
+	}
 	payload = s.enrichCeilingLaunchPayload(ctx, taskID, sessionID, payload)
 
 	if err := s.deferCeilingRefusal(ctx, taskID, sessionID, kind, payload, decision.reasonCode,

@@ -1726,6 +1726,9 @@ func (s *Server) registerSpawnSessionTool() {
 			mcp.WithString("agent_profile_id", mcp.Description("Requested agent profile for the new session. Omit to inherit your session's profile; a workflow launch profile may override it.")),
 			mcp.WithString("name", mcp.Description("Optional session name shown on the session tab (e.g. 'reviewer'). Helps the user tell concurrent sessions apart.")),
 			mcp.WithString("task_id", mcp.Description("Task to spawn the session on. Omit to use your current task.")),
+			mcp.WithString("idempotency_key", mcp.Description("Opt in to an exact, retry-safe launch. The prompt becomes the new session's first user instruction. Re-sending the same key and payload returns the same session; a different payload under the same key conflicts. Requires an idle card (no running work); name is rejected and the profile is not inherited. Check the returned outcome (completed, partial, in_progress) and prompt_status: a crash during prompt delivery is reported as uncertain and is never resent.")),
+			mcp.WithBoolean("make_primary", mcp.Description("With idempotency_key: also make the new session the task's primary session. If the primary changed meanwhile it is not displaced and the outcome is partial with primary_status conflict_not_applied. Omit to leave the primary selection unchanged.")),
+			mcp.WithString("expected_primary_session_id", mcp.Description("With idempotency_key: the primary session you observed (empty string means none). The launch is refused if the primary differs.")),
 		),
 		s.wrapHandler("spawn_session_kandev", s.spawnSessionHandler()),
 	)

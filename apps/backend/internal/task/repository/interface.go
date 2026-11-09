@@ -280,6 +280,35 @@ type ExactTaskOperationRepository interface {
 	) (alreadyApplied bool, err error)
 }
 
+// ExactSessionLaunchRepository owns the durable operation behind an exact
+// fresh-session launch. Admission is one transaction that validates the card,
+// busy state, and baseline and persists the frozen launch input; every later
+// transition is fenced to the single owner that claimed the operation.
+type ExactSessionLaunchRepository interface {
+	// AdmitExactSessionLaunch returns the stored operation and replayed=true
+	// when the key already exists with an equal digest. A different digest
+	// returns ErrTaskOperationConflict. Preconditions are checked only for a
+	// new operation.
+	AdmitExactSessionLaunch(ctx context.Context, adm models.ExactSessionLaunchAdmission) (op *models.ExactSessionLaunchOperation, replayed bool, err error)
+	GetExactSessionLaunch(ctx context.Context, operationID string) (*models.ExactSessionLaunchOperation, error)
+	GetExactSessionLaunchByKey(ctx context.Context, principalScope, workspaceID, idempotencyKey string) (*models.ExactSessionLaunchOperation, error)
+	// ClaimExactSessionLaunch takes ownership when the operation is open and
+	// unowned or its lease has expired, bumping the owner epoch.
+	ClaimExactSessionLaunch(ctx context.Context, operationID, ownerToken string, now time.Time, lease time.Duration) (*models.ExactSessionLaunchOperation, error)
+	RenewExactSessionLaunch(ctx context.Context, fence models.ExactSessionLaunchFence, now time.Time, lease time.Duration) error
+	// AdvanceExactSessionLaunch writes update only while fence still owns the
+	// operation and it is still in phase from. A terminal phase releases the
+	// owner.
+	AdvanceExactSessionLaunch(ctx context.Context, fence models.ExactSessionLaunchFence, from models.ExactSessionLaunchPhase, update models.ExactSessionLaunchUpdate, now time.Time) (*models.ExactSessionLaunchOperation, error)
+	// ReleaseExactSessionLaunch clears ownership without changing the phase.
+	ReleaseExactSessionLaunch(ctx context.Context, fence models.ExactSessionLaunchFence) error
+	ListOpenExactSessionLaunches(ctx context.Context, limit int) ([]*models.ExactSessionLaunchOperation, error)
+	// PromoteSessionPrimaryIfBaseline makes sessionID primary only while the
+	// card's primary is still the admitted baseline and that baseline is
+	// provably idle. It never displaces a concurrently changed primary.
+	PromoteSessionPrimaryIfBaseline(ctx context.Context, op *models.ExactSessionLaunchOperation) (models.PromoteSessionPrimaryResult, error)
+}
+
 // TaskManagementClaimRepository owns task management claims and their audit
 // history. Claim changes compare the task and claim resource versions in one
 // database transaction.

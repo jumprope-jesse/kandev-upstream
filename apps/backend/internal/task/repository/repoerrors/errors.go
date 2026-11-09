@@ -64,6 +64,28 @@ var ErrTaskCompletionHumanConfirmationRequired = errors.New("human confirmation 
 // a different task or payload.
 var ErrTaskOperationConflict = errors.New("task operation identity conflict")
 
+// ErrExactLaunchBusy reports that an exact session launch was refused because
+// the card has a launching or running session, known open background work, or
+// another unfinished exact launch.
+var ErrExactLaunchBusy = errors.New("exact session launch refused: card is busy")
+
+// ErrExactLaunchTaskArchived reports an exact launch on an archived card.
+var ErrExactLaunchTaskArchived = errors.New("exact session launch refused: card is archived")
+
+// ErrExactLaunchBaselineMismatch reports that the asserted primary session is
+// not the card's primary at admission.
+var ErrExactLaunchBaselineMismatch = errors.New("exact session launch refused: primary session changed")
+
+// ErrExactLaunchFenced reports a write by an owner that no longer holds the
+// operation.
+var ErrExactLaunchFenced = errors.New("exact session launch owner fenced")
+
+// ErrExactLaunchOwned reports that a live owner currently holds the operation.
+var ErrExactLaunchOwned = errors.New("exact session launch is owned by a live worker")
+
+// ErrExactLaunchNotFound reports that no operation matched.
+var ErrExactLaunchNotFound = errors.New("exact session launch operation not found")
+
 // ErrSilentRestoreAttemptConflict reports reuse of a restore-attempt ID for a
 // different durable source identity.
 var ErrSilentRestoreAttemptConflict = errors.New("silent restore attempt identity conflict")

@@ -18,3 +18,26 @@ type ExactExecutionController interface {
 }
 
 type exactExecutionController = ExactExecutionController
+
+// ExactSessionLaunchOutcome is the controller's report of one native exact
+// launch operation. FailureCode is the stable native error code of a failed or
+// uncertain operation.
+type ExactSessionLaunchOutcome struct {
+	OperationID   string
+	SessionID     string
+	SessionState  string
+	Outcome       string
+	PromptStatus  string
+	PrimaryStatus string
+	PrimaryReason string
+	FailureCode   string
+}
+
+// ExactSessionLaunchController is the optional extension of an
+// ExactExecutionController that can start a fresh session with an initial
+// prompt. A controller that does not implement it leaves the method
+// unavailable. Native refusals are returned as gRPC status errors whose
+// message is a stable reason code.
+type ExactSessionLaunchController interface {
+	LaunchFreshSession(context.Context, string, pluginsdk.ExactSessionLaunchCommand) (ExactSessionLaunchOutcome, error)
+}

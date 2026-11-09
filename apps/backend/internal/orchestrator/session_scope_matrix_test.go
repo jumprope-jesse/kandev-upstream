@@ -111,6 +111,12 @@ func sessionScopeCases() []deniedCase {
 			_, err := s.ProbeBackgroundWorkloads(context.Background(), sessionID)
 			return err
 		}},
+		{"LaunchFreshSessionExact", func(s *Service) error {
+			_, err := s.LaunchFreshSessionExact(context.Background(), "principal", models.ExactSessionLaunchRequest{
+				WorkspaceID: "ws-b", TaskID: taskID, IdempotencyKey: "key", Prompt: "prompt",
+			}, nil)
+			return err
+		}},
 	}
 }
 

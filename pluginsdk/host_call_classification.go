@@ -77,6 +77,7 @@ var hostCallCallerRequired = map[string]struct{}{
 	pluginv1.Host_CancelPendingTaskTransitionExact_FullMethodName: {},
 	pluginv1.Host_GetSessionModeContextExact_FullMethodName:       {},
 	pluginv1.Host_SetSessionModeExact_FullMethodName:              {},
+	pluginv1.Host_LaunchFreshSessionExact_FullMethodName:          {},
 	pluginv1.Host_RespondPermissionExact_FullMethodName:           {},
 	pluginv1.Host_AnswerClarificationExact_FullMethodName:         {},
 
@@ -98,7 +99,7 @@ var hostCallCallerRequired = map[string]struct{}{
 	pluginv1.Host_ListChangeRequestEvidenceExact_FullMethodName:  {},
 	pluginv1.Host_ListTaskUsageExact_FullMethodName:              {},
 	pluginv1.Host_ListAutomationDefinitionsExact_FullMethodName:  {},
-	pluginv1.Host_ListAutomationRunsExact_FullMethodName:        {},
+	pluginv1.Host_ListAutomationRunsExact_FullMethodName:         {},
 	pluginv1.Host_GetAutomationRunExact_FullMethodName:           {},
 
 	pluginv1.Host_ListTasks_FullMethodName:                    {},

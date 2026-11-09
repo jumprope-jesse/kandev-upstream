@@ -1664,6 +1664,8 @@ func (e *Executor) prepareSessionAttempt(ctx context.Context, task *v1.Task, age
 			return "", errors.New("reserved launch belongs to another task")
 		}
 		sessionID = identity.SessionID
+	} else if pinned, ok := models.PreallocatedSessionIDFromContext(ctx, task.ID); ok {
+		sessionID = pinned
 	}
 	now := time.Now().UTC()
 	session := &models.TaskSession{
