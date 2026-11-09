@@ -24,6 +24,8 @@ const exactLaunchColumns = `operation_id, principal_scope, workspace_id, idempot
 	prompt_status, error_code, error_message, owner_token, owner_epoch, lease_expires_at,
 	created_at, updated_at, completed_at`
 
+const exactLaunchKeyLockNamespace = "exact-session-launch-key:"
+
 const exactLaunchOpenPhases = `('completed', 'failed', 'uncertain')`
 
 const exactLaunchNonterminalSessionStates = `('CREATED', 'STARTING', 'RUNNING', 'IDLE', 'WAITING_FOR_INPUT')`
@@ -132,6 +134,9 @@ func (r *Repository) AdmitExactSessionLaunch(
 		return nil, false, err
 	}
 	defer func() { _ = tx.Rollback() }()
+	if err := r.lockExactLaunchKey(ctx, tx, op); err != nil {
+		return nil, false, err
+	}
 	if err := r.managedDeletionBarrierTx(ctx, tx, op.TaskID); err != nil {
 		return nil, false, err
 	}
@@ -160,6 +165,19 @@ func (r *Repository) AdmitExactSessionLaunch(
 		return nil, false, err
 	}
 	return stored, false, nil
+}
+
+// lockExactLaunchKey serializes admissions that share an idempotency scope on
+// PostgreSQL before the first read, so a duplicate on another card cannot pass
+// the lookup and admission checks while the winner is still in flight. SQLite's
+// single writer already serializes them.
+func (r *Repository) lockExactLaunchKey(ctx context.Context, tx *sqlx.Tx, op models.ExactSessionLaunchOperation) error {
+	if !dialect.IsPostgres(r.db.DriverName()) {
+		return nil
+	}
+	key := exactLaunchKeyLockNamespace + op.PrincipalScope + "\x00" + op.WorkspaceID + "\x00" + op.IdempotencyKey
+	_, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, key)
+	return err
 }
 
 func validateExactLaunchAdmission(op models.ExactSessionLaunchOperation) error {

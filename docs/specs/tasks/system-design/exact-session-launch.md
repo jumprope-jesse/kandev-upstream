@@ -129,7 +129,10 @@ session row holds its initial-prompt submission, which stays authoritative.
 `prompt_status` is a cache refreshed from the submission at each transition and
 corrected at reconciliation.
 
-Admission is one transaction that inserts the row if the unique key is absent.
+Admission is one transaction that inserts the row if the unique key is absent. On
+PostgreSQL it first takes `pg_advisory_xact_lock(hashtextextended(namespace +
+principal scope + workspace + key, 0))`, so concurrent callers with one key
+serialize before the first read; the unique constraint remains defense in depth.
 When the key exists, the digest is compared: equal returns the stored operation
 and different returns a conflict. The row, with its frozen input, exists before
 any session is created (AC-004.1).
@@ -199,6 +202,24 @@ caller prompt (AC-002.2, AC-002.5).
 The exact path does not append the card description or any other user text.
 Implementation must verify, in a test, how an ordinary created-session start
 composes the first message, and keep the exact path's behavior to the AC wording.
+
+The caller prompt is recorded as the first user message in
+`beforeProviderAdmission`, after the operation is durably `prompt_dispatched`
+and before the session receipt becomes `dispatching`. The write is idempotent by
+the deterministic initial-submission message ID. If it fails, admission is
+refused and nothing is sent. The instruction is therefore on record ahead of any
+agent output, and an uncertain dispatch still has it. Recovery and completion
+never write the message. When provider admission later refuses the prompt, the
+message is flagged `not_delivered` before the operation closes as failed. A
+failed flag write keeps the operation open, and a later reconciliation settles
+it as `uncertain`.
+
+The session receipt becomes `accepted` in `onInitialPromptAccepted`. If that
+write fails, the operation still advances to `prompt_accepted`, because the
+provider acceptance is the fact. Completion re-asserts the receipt (`dispatching`
+becomes `accepted` under the recorded execution) and refuses to complete over any
+other state, so the two receipts cannot disagree silently. An `uncertain`
+operation leaves the receipt `dispatching`; no accepted receipt is manufactured.
 
 Delivery is at most once per operation. A `dispatching` submission that was not
 resolved when the process died is never resent (AC-002.3, AC-002.4). See
@@ -371,6 +392,7 @@ reconciliation, so the three cannot diverge.
 | W4 | `prepared`, not started | Continue S3. If the submission is `pending` and the session is still `CREATED`, the prompt was provably not delivered and the start proceeds. If the session is no longer `CREATED` while the submission is `pending`, the operation fails with `prompt_status=not_delivered`, the session is settled terminal, and nothing is resent. |
 | W5 | Submission `dispatching` | Unresolvable. The provider might have received the prompt. The driver marks the operation `uncertain` with `prompt_status=uncertain`, records the session ID, and never resends (AC-002.4). |
 | W6 | Submission `accepted`, phase still `prompt_dispatching` | Derive from the submission, set `prompt_accepted`, continue to S4. |
+| W6b | Phase `prompt_accepted`, submission still `dispatching` | Completion re-asserts the receipt as `accepted` from the execution recorded at dispatch, then continues to S4. Any other receipt state blocks completion and is reported. |
 | W7 | Primary applied, phase not updated | The CAS reports `already_primary`. Continue to complete. |
 | W8 | Operation `completed`, plugin receipt not completed | Complete the receipt from the operation row. |
 
@@ -513,12 +535,23 @@ section of `CLAUDE.md`.
   reports `already_primary` instead of `applied`.
 - A session that moved beyond `CREATED` while its submission is still `pending`
   is reported as failed with `session_not_startable`.
-- A provider admission rejection is covered at the prompt-signal unit level, not
-  by an end-to-end provider fake.
+- A provider admission rejection is covered at the prompt-signal unit level and
+  by a driver-level settlement test, not by an end-to-end provider fake.
+- When provider admission refuses the prompt after the session receipt became
+  `dispatching`, the operation reports `failed` with `not_delivered` while the
+  session receipt stays `dispatching`. This is retained on purpose: returning
+  the receipt to `pending` would let an ordinary start deliver the prompt later,
+  outside the operation. The recorded first message carries `not_delivered`.
+- The idempotency key is scoped to the authenticated principal and the sender
+  task (`mcp:<user>:<sender task>`, `plugin:<installation>`). The same key used
+  from a different sender task is a different operation and creates its own
+  session. This is the intended per-sender scope, not a broadened grant.
 - The plugin call is bounded to 30 seconds. An `in_progress` result means the
   caller retries the same key.
-- PostgreSQL behavior is not proven by an environment-gated run in this
-  change.
+- The environment-gated PostgreSQL repository tests
+  (`exact_session_launch*_postgres_test.go`) skip without
+  `KANDEV_TEST_POSTGRES_DSN`. They have not been run against a live PostgreSQL
+  in this change, so PostgreSQL behavior is not proven by a run.
 
 ## Related
 

@@ -110,7 +110,7 @@ existing session.
 
 ### REQ-TASKS-EXACT-LAUNCH-005: Primary selection
 
-**Intent:** The caller chooses whether the fresh session becomes primary, and a concurrent change is never overwritten.
+**Intent:** The caller chooses whether the fresh session becomes primary. An idle baseline primary with no active work can be replaced when the caller explicitly requests it with a matching expected primary. An active, uncertain, or concurrently changed primary is never displaced.
 
 #### Acceptance criteria
 

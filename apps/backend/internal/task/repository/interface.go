@@ -305,7 +305,8 @@ type ExactSessionLaunchRepository interface {
 	ListOpenExactSessionLaunches(ctx context.Context, limit int) ([]*models.ExactSessionLaunchOperation, error)
 	// PromoteSessionPrimaryIfBaseline makes sessionID primary only while the
 	// card's primary is still the admitted baseline and that baseline is
-	// provably idle. It never displaces a concurrently changed primary.
+	// provably idle. An idle baseline with no active work is replaced; an
+	// active, uncertain or concurrently changed primary is never displaced.
 	PromoteSessionPrimaryIfBaseline(ctx context.Context, op *models.ExactSessionLaunchOperation) (models.PromoteSessionPrimaryResult, error)
 }
 

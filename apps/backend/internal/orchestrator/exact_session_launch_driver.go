@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -187,6 +188,9 @@ func (d *exactLaunchDriver) settlePrompt(ctx context.Context, outcome exactPromp
 	case exactPromptUncertain:
 		return d.markUncertain(wctx, code, "prompt delivery could not be confirmed and was not resent")
 	default:
+		if err := d.markFirstMessageNotDelivered(wctx, d.snapshot()); err != nil {
+			return fmt.Errorf("flag the undelivered first message: %w", err)
+		}
 		return d.failNotDelivered(wctx, code, "the initial prompt was not delivered")
 	}
 }

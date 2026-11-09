@@ -42,7 +42,7 @@ flag changes.
 
 ## Acceptance
 
-- A changed primary is never overwritten; the result is `conflict_not_applied`.
+- A changed primary is never overwritten; the result is `conflict_not_applied`. An idle baseline primary with no active work is replaced only when make-primary is requested with a matching expected primary.
 - Sessions whose flag does not change keep their `updated_at`.
 - A terminal session is not promoted.
 
@@ -84,4 +84,4 @@ None.
 
 ## Results
 
-Done. Added the compare-and-set primary promotion with activity-marker revalidation at commit; a changed primary is reported as `conflict_not_applied` and never displaced.
+Done. Added the compare-and-set primary promotion with activity-marker revalidation at commit; a changed or active baseline primary is reported as `conflict_not_applied` and left in place; only an idle baseline with zero active work is replaced.

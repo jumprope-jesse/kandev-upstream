@@ -105,7 +105,12 @@ func TestExactLaunchShutdownAfterDispatchIsUncertainAndNeverResent(t *testing.T)
 	replay := h.mustLaunch(h.request("key-hang"))
 	require.Equal(t, models.ExactLaunchOutcomeUncertain, replay.Outcome(), "the uncertainty is reported, not retried into success")
 	require.Equal(t, 1, h.dispatches(), "the prompt is never resent")
-	require.Empty(t, h.userMessages())
+	msgs := h.userMessages()
+	require.Len(t, msgs, 1, "the instruction was recorded before it could reach the provider")
+	require.Equal(t, exactTestPrompt, msgs[0].content)
+	require.Empty(t, h.messages.userMessageStatuses, "an uncertain prompt is not flagged as undelivered")
+	require.Equal(t, models.InitialPromptSubmissionDispatching, h.receiptState(op.SessionID),
+		"no accepted receipt is manufactured for an uncertain submission")
 }
 
 func TestExactLaunchRecoversFromDurableFrozenInputAfterRestart(t *testing.T) {

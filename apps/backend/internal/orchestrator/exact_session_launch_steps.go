@@ -186,6 +186,10 @@ func (d *exactLaunchDriver) beforeDispatch(ctx context.Context, op models.ExactS
 		sig.rejectAdmission()
 		return err
 	}
+	if err := d.ensureFirstMessage(ctx, op); err != nil {
+		sig.rejectAdmission()
+		return err
+	}
 	if err := d.s.transitionInitialSubmissionToDispatching(ctx, op.SessionID, executionID, ""); err != nil {
 		sig.rejectAdmission()
 		return err
@@ -193,14 +197,41 @@ func (d *exactLaunchDriver) beforeDispatch(ctx context.Context, op models.ExactS
 	return nil
 }
 
+// onAccepted writes the session receipt as soon as the provider accepts the
+// prompt so a crash before the operation advances still leaves proof of
+// delivery. A failed write is not final: finish re-asserts the receipt before
+// the operation can complete.
 func (d *exactLaunchDriver) onAccepted(ctx context.Context, op models.ExactSessionLaunchOperation, sig *exactPromptSignal, executionID string) {
 	wctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), exactLaunchWriteTimeout)
 	defer cancel()
 	if err := d.s.transitionInitialSubmissionToAccepted(wctx, op.SessionID, executionID, ""); err != nil {
-		d.s.logger.Zap().Warn("could not persist exact launch prompt acceptance",
+		d.s.logger.Zap().Warn("could not persist exact launch prompt acceptance; it is re-asserted before completion",
 			zap.String("operation_id", op.OperationID), zap.Error(err))
 	}
 	sig.accepted()
+}
+
+// assertReceiptAccepted brings the session's initial-prompt receipt to
+// accepted for an operation whose provider acceptance is already durable. It
+// only completes a receipt that is dispatching under the execution recorded at
+// dispatch; any other state is reported, never overwritten.
+func (d *exactLaunchDriver) assertReceiptAccepted(ctx context.Context, op models.ExactSessionLaunchOperation) error {
+	session, err := d.s.repo.GetTaskSession(ctx, op.SessionID)
+	if err != nil || session == nil {
+		return fmt.Errorf("exact launch session %s is unavailable to confirm its prompt receipt: %w", op.SessionID, err)
+	}
+	submission, found, err := models.LoadInitialPromptSubmission(session.Metadata)
+	if err != nil || !found {
+		return fmt.Errorf("exact launch prompt receipt for session %s is unavailable: %w", op.SessionID, err)
+	}
+	switch submission.State {
+	case models.InitialPromptSubmissionAccepted:
+		return nil
+	case models.InitialPromptSubmissionDispatching:
+		return d.s.transitionInitialSubmissionToAccepted(ctx, op.SessionID, submission.ExecutionID, submission.AttemptID)
+	default:
+		return fmt.Errorf("exact launch prompt receipt for session %s is %s after provider acceptance", op.SessionID, submission.State)
+	}
 }
 
 // recoverDispatching resolves an operation whose previous owner stopped after
@@ -222,11 +253,12 @@ func (d *exactLaunchDriver) recoverDispatching(ctx context.Context) error {
 	return d.settlePrompt(ctx, exactPromptUncertain, exactCodeDispatchUncertain)
 }
 
-// finish records the raw first user message, applies the requested primary
-// under the baseline and activity fence, and completes the operation.
+// finish confirms the session receipt, applies the requested primary under the
+// baseline and activity fence, and completes the operation. The first user
+// message was already recorded at the dispatch boundary.
 func (d *exactLaunchDriver) finish(ctx context.Context) error {
 	op := d.snapshot()
-	if err := d.ensureFirstMessage(ctx, op); err != nil {
+	if err := d.assertReceiptAccepted(ctx, op); err != nil {
 		return err
 	}
 	up := d.update(models.ExactLaunchPhaseCompleted, models.ExactLaunchPromptAccepted)
@@ -254,6 +286,9 @@ func (s *Service) exactLaunchPromote(
 	return result, nil
 }
 
+// ensureFirstMessage records the raw first user instruction. It runs before
+// the prompt can reach the provider, so the transcript shows the instruction
+// ahead of any agent output and an uncertain dispatch still has it on record.
 func (d *exactLaunchDriver) ensureFirstMessage(ctx context.Context, op models.ExactSessionLaunchOperation) error {
 	if d.s.messageCreator == nil {
 		return nil
@@ -264,4 +299,17 @@ func (d *exactLaunchDriver) ensureFirstMessage(ctx context.Context, op models.Ex
 		ctx, initialSubmissionUserMessageID(op.TaskID, op.SessionID), op.TaskID, op.FrozenInput.Prompt,
 		op.SessionID, turnID, meta.ToMap(),
 	)
+}
+
+// markFirstMessageNotDelivered flags the recorded first instruction when the
+// prompt is known never to have reached the provider. It is a no-op when no
+// message was recorded.
+func (d *exactLaunchDriver) markFirstMessageNotDelivered(ctx context.Context, op models.ExactSessionLaunchOperation) error {
+	if d.s.messageCreator == nil {
+		return nil
+	}
+	_, err := d.s.messageCreator.SetUserMessageDeliveryStatus(
+		ctx, initialSubmissionUserMessageID(op.TaskID, op.SessionID), op.SessionID, models.MessageDeliveryStatusNotDelivered,
+	)
+	return err
 }
