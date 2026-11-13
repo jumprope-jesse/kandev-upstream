@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/kandev/kandev/internal/common/logger"
 	"github.com/kandev/kandev/internal/task/models"
@@ -45,8 +46,8 @@ func TestMaterializeRepository_ReturnsTypedRemoteError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := &Client{baseURL: server.URL, httpClient: server.Client(), logger: log}
-	c.httpClient.Transport = &authTransport{token: "test-token", base: c.httpClient.Transport}
+	c := &Client{baseURL: server.URL, httpClient: server.Client(), longRunningHTTPClient: server.Client(), logger: log}
+	c.longRunningHTTPClient.Transport = &authTransport{token: "test-token", base: c.longRunningHTTPClient.Transport}
 	_, err = c.MaterializeRepository(context.Background(), MaterializeRepositoryRequest{
 		RepositoryURL:   "https://github.com/kdlbs/kandev.git",
 		Destination:     "kandev",
@@ -158,5 +159,35 @@ func TestRebindWorkspace_UsesAuthenticatedRebindEndpoint(t *testing.T) {
 	c := &Client{baseURL: server.URL, httpClient: server.Client(), logger: log}
 	if err := c.RebindWorkspace(context.Background(), "/workspace/task-1"); err != nil {
 		t.Fatalf("RebindWorkspace: %v", err)
+	}
+}
+
+func TestMaterializeRepository_UsesLongRunningClient(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(300 * time.Millisecond)
+		_, _ = w.Write([]byte(`{"destination":"kandev"}`))
+	}))
+	defer server.Close()
+
+	log, err := logger.NewLogger(logger.LoggingConfig{Level: "error", Format: "json"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &Client{
+		baseURL:               server.URL,
+		httpClient:            &http.Client{Timeout: 50 * time.Millisecond},
+		longRunningHTTPClient: &http.Client{Timeout: 5 * time.Second},
+		logger:                log,
+	}
+	resp, err := c.MaterializeRepository(context.Background(), MaterializeRepositoryRequest{
+		RepositoryURL: "https://github.com/kdlbs/kandev.git",
+		Destination:   "kandev",
+		BaseBranch:    "main",
+	})
+	if err != nil {
+		t.Fatalf("MaterializeRepository: %v", err)
+	}
+	if resp.Destination != "kandev" {
+		t.Fatalf("destination = %q", resp.Destination)
 	}
 }
