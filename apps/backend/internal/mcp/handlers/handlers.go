@@ -3923,7 +3923,7 @@ func (h *Handlers) startPreparedPeerTaskMessage(
 		// The start admission owns cleanup for any turn it created. The handler
 		// removes only its message so it cannot abandon another launch's turn.
 		h.deleteRecordedUserMessageWithoutTurnRollback(ctx, recorded)
-		if errors.Is(err, executor.ErrExecutionAlreadyRunning) || executor.IsRetryableRecoveryGuardRefusal(err) {
+		if errors.Is(err, executor.ErrExecutionAlreadyRunning) || executor.IsRecoveryGuardRefusal(err) {
 			releasePeerMessageStartAdmission(admission)
 			return h.queueAfterUnownedPeerStart(ctx, taskID, session, identity, prompt, metadata, interruptIfBusy)
 		}
@@ -4066,7 +4066,7 @@ func (h *Handlers) queueAfterRecoveryGuardRefusal(
 	admission orchestrator.PeerMessageStartAdmission,
 	cause error,
 ) (taskMessageDispatchResult, bool) {
-	if !executor.IsRetryableRecoveryGuardRefusal(cause) {
+	if !executor.IsRecoveryGuardRefusal(cause) {
 		return taskMessageDispatchResult{}, false
 	}
 	identity, err := h.resolveTaskMessageQueueIdentity(ctx, taskID, session)

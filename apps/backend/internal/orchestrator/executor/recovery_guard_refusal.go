@@ -6,12 +6,12 @@ import "errors"
 // by the startup recovery guard (see orchestrator.SessionRecoveryGuardError).
 type recoveryGuardRefusal interface {
 	error
-	RetryableRecoveryGuardRefusal() bool
+	RecoveryGuardRefusal() bool
 }
 
-// IsRetryableRecoveryGuardRefusal reports whether err is a retryable refusal
-// by the startup recovery guard. Such a refusal must not change session state.
-func IsRetryableRecoveryGuardRefusal(err error) bool {
+// IsRecoveryGuardRefusal reports whether err is a refusal
+// by the startup recovery guard, retryable or not. Such a refusal must not change session state.
+func IsRecoveryGuardRefusal(err error) bool {
 	var refusal recoveryGuardRefusal
-	return errors.As(err, &refusal) && refusal.RetryableRecoveryGuardRefusal()
+	return errors.As(err, &refusal) && refusal.RecoveryGuardRefusal()
 }

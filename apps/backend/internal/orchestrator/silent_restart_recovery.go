@@ -120,7 +120,7 @@ func (s *Service) runSilentRestoreRecoveryPass(ctx context.Context, store taskre
 		for _, candidate := range candidates {
 			jobs = append(jobs, queue.submit(candidate, func(opCtx context.Context, candidate models.SilentRestoreCandidate) error {
 				err := s.restoreSilentRestartCandidate(opCtx, store, candidate)
-				if err != nil && isDetachedDeliveryOwnerMismatch(err) {
+				if err != nil && errors.Is(err, errDetachedDeliveryOwnerMismatch) {
 					if settleErr := s.settleDetachedTurnAfterOwnerMismatch(opCtx, candidate.SessionID); settleErr != nil {
 						s.logger.Warn("could not settle detached turn after owner mismatch",
 							zap.String("session_id", candidate.SessionID), zap.Error(settleErr))

@@ -30,9 +30,15 @@ func (e *SessionRecoveryGuardError) Unwrap() error {
 	return e.Cause
 }
 
-// RetryableRecoveryGuardRefusal satisfies executor.IsRetryableRecoveryGuardRefusal.
-func (e *SessionRecoveryGuardError) RetryableRecoveryGuardRefusal() bool {
-	return e != nil && e.Retryable
+// RecoveryGuardRefusal satisfies executor.IsRecoveryGuardRefusal. Every guard
+// error, retryable or not, is a refusal that launched nothing.
+func (e *SessionRecoveryGuardError) RecoveryGuardRefusal() bool {
+	return e != nil
+}
+
+func isSessionRecoveryGuardRefusal(err error) bool {
+	var guardErr *SessionRecoveryGuardError
+	return errors.As(err, &guardErr)
 }
 
 func isRetryableSessionRecoveryGuardError(err error) bool {

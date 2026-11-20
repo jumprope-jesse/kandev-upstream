@@ -4109,32 +4109,10 @@ func (s *Service) handleTerminalSessionOnStartup(ctx context.Context, session *m
 		s.pruneOrRepairExecutorRow(ctx, running, previousState)
 		return true
 	case models.TaskSessionStateFailed:
-		if s.reattachFailedSessionOnStartup(session, running) {
-			return true
-		}
 		s.handleFailedSessionOnStartup(ctx, session, running, report, scope)
 		return true
 	}
 	return false
-}
-
-// reattachFailedSessionOnStartup keeps a FAILED-but-resumable session whose
-// remote agent is still owned by this boot (pending recovery or already
-// re-tracked) on the reattach path: the live turn, executor row and agent are
-// left alone instead of being abandoned by failed-session cleanup, so a normal
-// resume finds the running agent. Reports whether the session was handled.
-func (s *Service) reattachFailedSessionOnStartup(session *models.TaskSession, running *models.ExecutorRunning) bool {
-	if !canResumeRunning(running) {
-		return false
-	}
-	pending := s.hasPendingRemoteRecovery(session.ID, running.AgentExecutionID)
-	if !pending && !s.wasSessionRetracked(session.ID) {
-		return false
-	}
-	s.logger.Info("preserving failed session whose remote agent is live or being recovered",
-		zap.String("session_id", session.ID), zap.String("task_id", session.TaskID),
-		zap.Bool("pending_remote_recovery", pending))
-	return true
 }
 
 // handleFailedSessionOnStartup handles a failed session during startup recovery.

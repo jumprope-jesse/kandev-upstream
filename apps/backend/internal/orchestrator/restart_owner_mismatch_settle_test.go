@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	agentruntime "github.com/kandev/kandev/internal/agent/runtime"
+	agentctl "github.com/kandev/kandev/internal/agent/runtime/agentctl"
 	"github.com/kandev/kandev/internal/task/models"
 )
 
@@ -50,7 +52,33 @@ func TestIsDetachedDeliveryOwnerMismatch(t *testing.T) {
 	if !isDetachedDeliveryOwnerMismatch(fmt.Errorf("x: %w", agentruntime.ErrDeliveryOwnerMismatch)) {
 		t.Fatal("owner mismatch must be recognized")
 	}
+	if !isDetachedDeliveryOwnerMismatch(evidencedOwnerMismatchError()) {
+		t.Fatal("the evidenced 409 OWNER_MISMATCH chain must be recognized")
+	}
+	if isDetachedDeliveryOwnerMismatch(transientStaleEvidenceError()) {
+		t.Fatal("stale evidence without the OWNER_MISMATCH code can be transient and keeps retrying")
+	}
+	if isDetachedDeliveryOwnerMismatch(errors.Join(agentruntime.ErrDeliveryRecordEvidenceConflict,
+		&agentctl.DeliveryHTTPError{StatusCode: http.StatusRequestEntityTooLarge, Body: "SUBMISSION_TOO_LARGE"})) {
+		t.Fatal("a 413 evidence conflict is not an owner mismatch")
+	}
 	if isDetachedDeliveryOwnerMismatch(errors.New("transient")) {
 		t.Fatal("transient errors keep retrying")
 	}
+}
+
+// evidencedOwnerMismatchError is the error chain lifecycle builds for the
+// card's HTTP 409 OWNER_MISMATCH ("delivery record evidence changed").
+func evidencedOwnerMismatchError() error {
+	httpErr := &agentctl.DeliveryHTTPError{
+		StatusCode: http.StatusConflict, Body: `{"code":"OWNER_MISMATCH","message":"OWNER_MISMATCH"}`,
+	}
+	return errors.Join(agentruntime.ErrDeliveryRecordEvidenceStale, agentruntime.ErrDeliveryRecoveryBlocked, httpErr)
+}
+
+func transientStaleEvidenceError() error {
+	httpErr := &agentctl.DeliveryHTTPError{
+		StatusCode: http.StatusConflict, Body: `{"code":"SEQUENCE_CONFLICT","message":"SEQUENCE_CONFLICT"}`,
+	}
+	return errors.Join(agentruntime.ErrDeliveryRecordEvidenceStale, agentruntime.ErrDeliveryRecoveryBlocked, httpErr)
 }

@@ -8,11 +8,15 @@ import (
 	"time"
 
 	agentruntime "github.com/kandev/kandev/internal/agent/runtime"
-	"github.com/kandev/kandev/internal/agent/runtime/agentctl"
+	agentctl "github.com/kandev/kandev/internal/agent/runtime/agentctl"
 	"github.com/kandev/kandev/internal/task/models"
 	taskrepo "github.com/kandev/kandev/internal/task/repository"
 	"go.uber.org/zap"
 )
+
+// errDetachedDeliveryOwnerMismatch marks a silent-restore failure whose
+// delivery owner was proven to be different from the one pinned by recovery.
+var errDetachedDeliveryOwnerMismatch = errors.New("detached delivery owner mismatch")
 
 // isDetachedDeliveryOwnerMismatch reports an error proving the agentctl owner
 // rejected the delivery as belonging to a different owner (HTTP 409 with the
