@@ -426,6 +426,9 @@ var profileConfigAuthoritativeKeys = []string{
 	// which the reader treats as disabled.
 	lifecycle.MetadataKeySSHReclaimTaskDir,
 	lifecycle.MetadataKeyAllowUserNamespaces,
+	// The card memory limit is a resource boundary. A task that could supply
+	// its own value could raise its limit past what the profile allows.
+	lifecycle.MetadataKeyContainerMemoryMB,
 	// Network placement is a containment boundary. A task that could supply
 	// its own value would leave an internal network its profile confined it
 	// to, or join a LAN segment the profile never granted.

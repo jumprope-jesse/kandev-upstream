@@ -124,6 +124,10 @@ func buildDockerContainerConfig(req *ExecutorCreateRequest, executorType string)
 			return ContainerConfig{}, fmt.Errorf("unsupported Docker executor type for durable journal: %s", executorType)
 		}
 	}
+	memoryMB, err := parseContainerMemoryMB(getMetadataString(req.Metadata, MetadataKeyContainerMemoryMB))
+	if err != nil {
+		return ContainerConfig{}, err
+	}
 	return ContainerConfig{
 		AgentConfig:                    req.AgentConfig,
 		WorkspacePath:                  "", // Empty = no workspace mount; the clone happens inside the container.
@@ -144,6 +148,7 @@ func buildDockerContainerConfig(req *ExecutorCreateRequest, executorType string)
 		PrepareScript:                  prepareScript,
 		ImageTagOverride:               getMetadataString(req.Metadata, MetadataKeyImageTagOverride),
 		AllowUserNamespaces:            getMetadataString(req.Metadata, MetadataKeyAllowUserNamespaces) == boolStringTrue,
+		MemoryMB:                       memoryMB,
 		LocalClonePath:                 localCloneMountPathFor(req.Metadata, executorType),
 		BaseBranches:                   getMetadataStringMap(req.Metadata, MetadataKeyBaseBranches),
 		RemoteContributions:            req.RemoteContributions,

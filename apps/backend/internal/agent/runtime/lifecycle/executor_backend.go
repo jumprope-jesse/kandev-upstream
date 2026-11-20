@@ -228,6 +228,9 @@ const (
 	MetadataKeyGitUserEmail             = "git_user_email"
 	MetadataKeyImageTagOverride         = "image_tag_override"
 	MetadataKeyAllowUserNamespaces      = "allow_user_namespaces"
+	// MetadataKeyContainerMemoryMB is the executor profile's Docker card
+	// memory limit in MiB. Empty means DefaultContainerMemoryMB.
+	MetadataKeyContainerMemoryMB        = "container_memory_mb"
 	MetadataKeyDockerNetwork            = "docker_network"
 	MetadataKeyDockerNetworkGwPriority  = "docker_network_gw_priority"
 	MetadataKeyDockerAdditionalNetworks = "docker_additional_networks"
@@ -452,6 +455,7 @@ var persistentMetadataKeys = map[string]bool{
 	MetadataKeyPluginExecutor:           true,
 	MetadataKeyImageTagOverride:         true,
 	MetadataKeyAllowUserNamespaces:      true,
+	MetadataKeyContainerMemoryMB:        true,
 	MetadataKeyDockerNetwork:            true,
 	MetadataKeyDockerNetworkGwPriority:  true,
 	MetadataKeyDockerAdditionalNetworks: true,

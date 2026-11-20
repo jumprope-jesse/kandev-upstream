@@ -70,6 +70,7 @@ type ContainerConfig struct {
 	PrepareScript                  string // Script to run inside container before agent starts (e.g., clone repo)
 	ImageTagOverride               string // If set, replaces the agent runtime's default image (e.g. profile.config.image_tag)
 	AllowUserNamespaces            bool   // If true, the container is launched with a relaxed seccomp profile and apparmor=unconfined.
+	MemoryMB                       int64  // Container memory limit in MiB from the executor profile; 0 means DefaultContainerMemoryMB.
 	LocalClonePath                 string // Host path for file:// repository clone URLs; mounted read-only at the same path.
 	BootstrapNonce                 string // one-time nonce for agentctl handshake (set internally)
 	AgentctlStartupConfig          commonconfig.AgentctlStartupConfig
@@ -604,8 +605,12 @@ func (cm *ContainerManager) buildContainerConfigWithContext(ctx context.Context,
 		return docker.ContainerConfig{}, err
 	}
 
-	// Calculate resource limits
-	memoryBytes := rt.ResourceLimits.MemoryMB * 1024 * 1024
+	// Calculate resource limits. The memory limit belongs to the executor
+	// profile (container_memory_mb), not the agent: the agent's own process is
+	// small, and what fills a card container is the work it runs (builds,
+	// linters, test suites). Profiles that set nothing get
+	// DefaultContainerMemoryMB.
+	memoryBytes := effectiveContainerMemoryMB(config.MemoryMB) * 1024 * 1024
 	cpuQuota := int64(rt.ResourceLimits.CPUCores * 100000) // Docker CPU quota
 
 	containerName := fmt.Sprintf("kandev-agent-%s", config.InstanceID[:8])
