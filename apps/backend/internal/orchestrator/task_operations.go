@@ -1223,7 +1223,7 @@ func (s *Service) handleSessionLaunchFailure(
 	launchErr error,
 	preloadedSession ...*models.TaskSession,
 ) error {
-	if isSessionRecoveryGuardRefusal(launchErr) {
+	if isRetryableSessionRecoveryGuardError(launchErr) {
 		// A guard refusal launched nothing: leave state and recovery blocks as they were.
 		return launchErr
 	}
@@ -4629,7 +4629,7 @@ func (s *Service) attemptColdResume(
 		return false, attemptErr
 	}
 	if launchErr != nil {
-		if isSessionRecoveryGuardRefusal(launchErr) {
+		if isRetryableSessionRecoveryGuardError(launchErr) {
 			return false, launchErr
 		}
 		if errors.Is(launchErr, executor.ErrExecutionAlreadyRunning) {

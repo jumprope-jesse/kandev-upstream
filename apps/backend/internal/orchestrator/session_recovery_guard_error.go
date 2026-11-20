@@ -31,14 +31,14 @@ func (e *SessionRecoveryGuardError) Unwrap() error {
 }
 
 // RecoveryGuardRefusal satisfies executor.IsRecoveryGuardRefusal. Every guard
-// error, retryable or not, is a refusal that launched nothing.
+// error is a refusal that launched nothing.
 func (e *SessionRecoveryGuardError) RecoveryGuardRefusal() bool {
 	return e != nil
 }
 
-func isSessionRecoveryGuardRefusal(err error) bool {
-	var guardErr *SessionRecoveryGuardError
-	return errors.As(err, &guardErr)
+// RetryableRecoveryGuardRefusal reports a refusal that clears without a restart.
+func (e *SessionRecoveryGuardError) RetryableRecoveryGuardRefusal() bool {
+	return e != nil && e.Retryable
 }
 
 func isRetryableSessionRecoveryGuardError(err error) bool {

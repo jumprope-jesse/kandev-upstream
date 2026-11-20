@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -17,12 +18,9 @@ import (
 // recover while the guard is held, then another message for the session. The
 // session ends in the state it was in, with no message lost.
 func TestRestartSequenceDetachedTurnGuardedRecoverAndQueuedMessages(t *testing.T) {
-	for _, retryable := range []bool{true, false} {
-		name := "retryable guard"
-		if !retryable {
-			name = "unstoppable guard"
-		}
-		t.Run(name, func(t *testing.T) {
+	{
+		retryable := true
+		t.Run("retryable guard", func(t *testing.T) {
 			service, repo, manager, session, store := newSilentRestoreEligibilityFixture(t, "provider-session", "sequence")
 			ctx := context.Background()
 			fixture := &silentRestoreCheckpointFixture{ctx: ctx, repo: repo, session: session}
@@ -54,7 +52,7 @@ func TestRestartSequenceDetachedTurnGuardedRecoverAndQueuedMessages(t *testing.T
 			}
 			_, err := service.RecoverSession(ctx, session.TaskID, session.ID, "resume")
 			require.Error(t, err)
-			require.True(t, errors.Is(err, lifecycle.ErrSessionRecoveryGuarded) || isSessionRecoveryGuardRefusal(err),
+			require.True(t, errors.Is(err, lifecycle.ErrSessionRecoveryGuarded) || isRetryableSessionRecoveryGuardError(err),
 				"the refusal is reported to the caller: %v", err)
 			after, err := repo.GetTaskSession(ctx, session.ID)
 			require.NoError(t, err)
@@ -73,4 +71,16 @@ func TestRestartSequenceDetachedTurnGuardedRecoverAndQueuedMessages(t *testing.T
 			require.Contains(t, strings.Join(queued, "\n"), "peer message")
 		})
 	}
+}
+
+// The unstoppable-agent refusal needs another restart, so it stays a visible
+// FAILED session; both refusals are recognized so a peer message is kept.
+func TestRecoveryGuardRefusalPredicates(t *testing.T) {
+	retryable := fmt.Errorf("resume: %w", &SessionRecoveryGuardError{Retryable: true})
+	unstoppable := &SessionRecoveryGuardError{Retryable: false}
+	require.True(t, executor.IsRecoveryGuardRefusal(retryable))
+	require.True(t, executor.IsRecoveryGuardRefusal(unstoppable))
+	require.True(t, executor.IsRetryableRecoveryGuardRefusal(retryable))
+	require.False(t, executor.IsRetryableRecoveryGuardRefusal(unstoppable))
+	require.False(t, executor.IsRecoveryGuardRefusal(errors.New("other")))
 }
