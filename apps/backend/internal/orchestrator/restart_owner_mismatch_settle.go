@@ -3,20 +3,29 @@ package orchestrator
 import (
 	"context"
 	"errors"
+	"net/http"
+	"strings"
 	"time"
 
 	agentruntime "github.com/kandev/kandev/internal/agent/runtime"
+	"github.com/kandev/kandev/internal/agent/runtime/agentctl"
 	"github.com/kandev/kandev/internal/task/models"
 	taskrepo "github.com/kandev/kandev/internal/task/repository"
 	"go.uber.org/zap"
 )
 
-// isDetachedDeliveryOwnerMismatch reports an error proving the delivery
-// evidence for a restored session belongs to a different owner than the one
-// the restart recovery pinned. Retrying cannot succeed.
+// isDetachedDeliveryOwnerMismatch reports an error proving the agentctl owner
+// rejected the delivery as belonging to a different owner (HTTP 409 with the
+// OWNER_MISMATCH code), or the lifecycle's own owner-mismatch sentinel.
+// Retrying cannot succeed. A bare stale-evidence error is not enough: it can
+// also be a transient snapshot change.
 func isDetachedDeliveryOwnerMismatch(err error) bool {
-	return errors.Is(err, agentruntime.ErrDeliveryOwnerMismatch) ||
-		errors.Is(err, agentruntime.ErrDeliveryRecordEvidenceConflict)
+	if errors.Is(err, agentruntime.ErrDeliveryOwnerMismatch) {
+		return true
+	}
+	var httpErr *agentctl.DeliveryHTTPError
+	return errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusConflict &&
+		strings.Contains(httpErr.Body, "OWNER_MISMATCH")
 }
 
 // settleDetachedTurnAfterOwnerMismatch settles a detached turn whose delivery

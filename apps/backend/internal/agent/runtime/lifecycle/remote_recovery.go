@@ -19,11 +19,6 @@ import (
 const (
 	remoteRecoveryAttemptTimeout = 15 * time.Second
 	remoteRecoveryBatchSize      = 4
-	// remoteRecoveryGuardMaxAge bounds how long a remote execution may stay
-	// behind its retryable recovery guard without being re-attached. Past it
-	// the guard is released (the executor record is kept) so the session can be
-	// resumed without another backend restart.
-	remoteRecoveryGuardMaxAge = 10 * time.Minute
 )
 
 var errRemoteRecoveryFenced = errors.New("remote recovery candidate was fenced")
@@ -37,7 +32,6 @@ type remoteRecoveryRetry struct {
 	stopReason           string
 	stopForce            bool
 	stopRuntimeCompleted bool
-	queuedAt             time.Time
 }
 
 func isRemoteRecoveryRuntime(runtime agentruntime.Runtime) bool {
@@ -196,31 +190,71 @@ func (m *Manager) retryPendingRemoteRecoveries(ctx context.Context) {
 	}
 }
 
-// ReleaseRemoteRecoveryGuard is the explicit operator release: it drops the
-// session's pending remote recovery and its retryable guard, keeping the
-// executor record. It reports whether a pending recovery was released. A
-// guard retained as unstoppable is never released here.
-func (m *Manager) ReleaseRemoteRecoveryGuard(sessionID string) bool {
+// ErrRemoteOwnerNotProvenGone is returned when the guard cannot be released
+// because the remote agent owner is alive or its absence is not proven.
+var ErrRemoteOwnerNotProvenGone = errors.New("remote agent owner is not proven gone")
+
+// ReleaseRemoteRecoveryGuard is the explicit operator release. It probes the
+// persisted remote owner and releases the session's retryable guard only when
+// the runtime proves the old agent is gone; the executor record is kept so a
+// resume starts a fresh agent. A live or unprovable owner keeps the guard,
+// because releasing it would allow a second agent for the same session. It
+// reports whether the guard was released.
+func (m *Manager) ReleaseRemoteRecoveryGuard(ctx context.Context, sessionID string) (bool, error) {
 	entry := m.pendingRemoteRecoveryForSession(sessionID)
 	if entry == nil {
-		return false
+		return false, nil
 	}
-	m.removeRemoteRecovery(entry, true)
-	return true
+	if !m.beginRemoteRecovery(entry) {
+		return false, ErrRemoteOwnerNotProvenGone
+	}
+	defer m.finishRemoteRecoveryAttempt(entry)
+	attemptCtx, cancel := m.remoteAttemptContext(ctx)
+	defer cancel()
+	if m.executorRegistry == nil {
+		return false, ErrRemoteOwnerNotProvenGone
+	}
+	backend, err := m.executorRegistry.GetBackend(entry.record.Runtime)
+	if err != nil {
+		return false, fmt.Errorf("get remote runtime %s: %w", entry.record.Runtime, err)
+	}
+	ri, outcome, err := m.recoverPendingRemoteStopInstance(attemptCtx, backend, entry)
+	if err != nil {
+		return false, fmt.Errorf("probe remote owner: %w", err)
+	}
+	if ri != nil {
+		m.discardRemoteRecoveryInstance(ri)
+		return false, ErrRemoteOwnerNotProvenGone
+	}
+	if !m.releaseGuardIfOwnerProvenGone(attemptCtx, entry, outcome) {
+		return false, ErrRemoteOwnerNotProvenGone
+	}
+	return true, nil
 }
 
-// expireRemoteRecoveryGuard releases an entry that has outlived
-// remoteRecoveryGuardMaxAge. An entry with a stop requested keeps its guard:
-// the stop must resolve first.
-func (m *Manager) expireRemoteRecoveryGuard(entry *remoteRecoveryRetry) bool {
+// releaseGuardIfOwnerProvenGone releases the retryable guard only when the
+// runtime proved that no instance matches the persisted remote execution and
+// that proof is valid for the runtime. The executor record is kept. An entry
+// with a stop pending keeps its guard until the stop resolves.
+func (m *Manager) releaseGuardIfOwnerProvenGone(
+	ctx context.Context,
+	entry *remoteRecoveryRetry,
+	outcome RecoveryCandidateOutcome,
+) bool {
 	m.remoteRecoveryMu.Lock()
-	expired := !entry.stopRequested && !entry.inProgress && !entry.queuedAt.IsZero() &&
-		time.Since(entry.queuedAt) > remoteRecoveryGuardMaxAge
+	stopRequested := entry.stopRequested
 	m.remoteRecoveryMu.Unlock()
-	if !expired {
+	if stopRequested || outcome != RecoveryOutcomeNoMatchingInstance ||
+		!remoteRecoveryNoMatchProvesStopped(entry.record.Runtime) {
 		return false
 	}
-	m.logger.Warn("remote recovery guard exceeded its lifetime; releasing it and preserving the executor record",
+	if _, live := m.executionStore.GetBySessionID(entry.record.SessionID); live {
+		return false
+	}
+	if err := m.validatePendingRemoteStopOwner(ctx, entry); err != nil {
+		return false
+	}
+	m.logger.Info("remote agent owner proven gone; releasing recovery guard and preserving the executor record",
 		zap.String("session_id", entry.record.SessionID), zap.String("execution_id", entry.record.AgentExecutionID))
 	m.removeRemoteRecovery(entry, true)
 	return true
@@ -229,9 +263,6 @@ func (m *Manager) expireRemoteRecoveryGuard(entry *remoteRecoveryRetry) bool {
 func (m *Manager) retryRemoteRecovery(parent context.Context, entry *remoteRecoveryRetry) {
 	if entry == nil || entry.record == nil {
 		m.finishRemoteRecoveryAttempt(entry)
-		return
-	}
-	if m.expireRemoteRecoveryGuard(entry) {
 		return
 	}
 	if !m.beginRemoteRecovery(entry) {
@@ -320,8 +351,9 @@ func (m *Manager) attachRemoteRecovery(ctx context.Context, entry *remoteRecover
 	}
 	credentialed := m.revealRemoteRecoveryCredentials(ctx, attemptRecord)
 	var recovered []*ExecutorInstance
+	var outcomes map[string]RecoveryCandidateOutcome
 	if detailed, ok := backend.(DetailedRecoveryBackend); ok {
-		recovered, _, err = detailed.RecoverInstancesDetailed(ctx, []*models.ExecutorRunning{credentialed})
+		recovered, outcomes, err = detailed.RecoverInstancesDetailed(ctx, []*models.ExecutorRunning{credentialed})
 	} else {
 		recovered, err = backend.RecoverInstances(ctx, []*models.ExecutorRunning{credentialed})
 	}
@@ -337,6 +369,7 @@ func (m *Manager) attachRemoteRecovery(ctx context.Context, entry *remoteRecover
 		}
 	}
 	if ri == nil {
+		m.releaseGuardIfOwnerProvenGone(ctx, entry, outcomes[entry.record.SessionID])
 		return
 	}
 	if err := m.processRecoveredRemoteInstance(ctx, entry, ri); err != nil {
@@ -734,7 +767,7 @@ func (m *Manager) queueRemoteRecovery(record *models.ExecutorRunning, snapshot *
 	if record == nil || record.SessionID == "" || !isRemoteRecoveryRuntime(record.Runtime) {
 		return nil
 	}
-	entry := &remoteRecoveryRetry{record: cloneRemoteRecoveryRecord(record), snapshot: snapshot, queuedAt: time.Now()}
+	entry := &remoteRecoveryRetry{record: cloneRemoteRecoveryRecord(record), snapshot: snapshot}
 	m.remoteRecoveryMu.Lock()
 	if m.remoteRecoveryPending == nil {
 		m.remoteRecoveryPending = make(map[string]*remoteRecoveryRetry)
