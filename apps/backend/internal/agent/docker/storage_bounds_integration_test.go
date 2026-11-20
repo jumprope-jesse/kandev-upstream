@@ -34,8 +34,9 @@ func TestContainerStorageBoundsOnLocalDaemon(t *testing.T) {
 		Entrypoint: []string{"/bin/sh"},
 		Cmd: []string{"-c", `
 set -eu
-test "$(stat -f -c %T /tmp)" = tmpfs
-test "$(df -k /tmp | tail -1 | awk '{print $2}')" = 2097152
+test "$(stat -f -c %T /tmp)" != tmpfs
+test "$(stat -c %a /tmp)" = 1777
+grep -q ' /tmp ' /proc/self/mountinfo
 printf '%s\n' '#!/bin/sh' 'echo executable-scratch-ok' > /tmp/exec-probe
 chmod +x /tmp/exec-probe
 test "$(/tmp/exec-probe)" = executable-scratch-ok
@@ -57,6 +58,10 @@ echo bounded-scratch-ok
 	inspected, err := c.inspectContainer(ctx, id)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(inspected.HostConfig.Tmpfs) != 0 || !hasScratchVolume(inspected.HostConfig.Mounts) {
+		t.Fatalf("daemon did not create /tmp as a per-container volume: tmpfs=%#v mounts=%#v",
+			inspected.HostConfig.Tmpfs, inspected.HostConfig.Mounts)
 	}
 	if inspected.HostConfig.LogConfig.Config["max-size"] != "100m" || inspected.HostConfig.LogConfig.Config["max-file"] != "3" {
 		t.Fatalf("daemon did not retain log budget: %#v", inspected.HostConfig.LogConfig)

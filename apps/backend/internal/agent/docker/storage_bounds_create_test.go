@@ -75,11 +75,12 @@ func assertCreatedStorageBounds(t *testing.T, got *container.HostConfig, cfg Con
 		Type: "json-file", Config: map[string]string{"max-size": "100m", "max-file": "3"},
 	}, got.LogConfig)
 	require.Equal(t, cfg.Memory, got.Memory)
+	require.Empty(t, got.Tmpfs, "/tmp must not be a tmpfs charged to the memory limit")
 	if len(cfg.Mounts) == 0 {
-		require.Equal(t, "rw,exec,nosuid,nodev,size=2147483648,mode=1777", got.Tmpfs["/tmp"])
+		require.True(t, hasScratchVolume(got.Mounts), "no per-container /tmp volume: %#v", got.Mounts)
+		require.Len(t, got.Mounts, 1)
 		return
 	}
-	require.NotContains(t, got.Tmpfs, "/tmp")
 	require.Len(t, got.Mounts, 1)
 	require.Equal(t, cfg.Mounts[0].Source, got.Mounts[0].Source)
 	require.Equal(t, cfg.Mounts[0].Target, got.Mounts[0].Target)
