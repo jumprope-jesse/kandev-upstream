@@ -11,6 +11,18 @@ import (
 // task runtime and credentials needed to resume its session.
 const StopReasonRecoverableAgentFailure = "recoverable agent failure"
 
+// StopReasonPromptReadinessRecovery stops an agent whose process never became
+// promptable (for example after a memory kill) so the session can be resumed.
+// The resume reattaches to the same workspace, so a retained Docker container
+// must survive this stop just as it survives a recoverable agent failure.
+const StopReasonPromptReadinessRecovery = "prompt readiness recovery"
+
+// preservesDockerWorkspace reports stop reasons after which the session is
+// resumed into the same Docker container.
+func preservesDockerWorkspace(reason string) bool {
+	return reason == StopReasonRecoverableAgentFailure || reason == StopReasonPromptReadinessRecovery
+}
+
 // errRecoverableStopUnconfirmed leaves a preserved runtime tracked after the
 // agent process could not be confirmed stopped.
 var errRecoverableStopUnconfirmed = errors.New("agent stop was not confirmed; runtime retained for retry")
@@ -18,7 +30,7 @@ var errRecoverableStopUnconfirmed = errors.New("agent stop was not confirmed; ru
 // shouldPreserveRemoteDockerStopReason keeps an unconfirmed agent stop from
 // stopping or removing a workspace that recovery still owns.
 func shouldPreserveRemoteDockerStopReason(reason string) bool {
-	return reason == StopReasonRecoverableAgentFailure || reason == StopReasonAgentBootstrapFailed
+	return preservesDockerWorkspace(reason) || reason == StopReasonAgentBootstrapFailed
 }
 
 // shouldPreserveKubernetesRuntime retains established Kubernetes resources for
@@ -38,7 +50,7 @@ func shouldPreserveRemoteDockerRuntime(execution *AgentExecution, reason string)
 	if execution == nil || execution.RuntimeName != executor.NameRemoteDocker {
 		return false
 	}
-	if reason == StopReasonRecoverableAgentFailure {
+	if preservesDockerWorkspace(reason) {
 		return true
 	}
 	return reason == StopReasonAgentBootstrapFailed && execution.attachedExistingCompute
@@ -51,7 +63,7 @@ func shouldPreserveRecoverableRuntime(execution *AgentExecution, reason string) 
 	if shouldPreserveRemoteDockerRuntime(execution, reason) {
 		return true
 	}
-	return execution != nil && execution.RuntimeName == executor.NameDocker && reason == StopReasonRecoverableAgentFailure
+	return execution != nil && execution.RuntimeName == executor.NameDocker && preservesDockerWorkspace(reason)
 }
 
 // retainsRuntimeOnLaunchRollback reports whether a failed registered launch

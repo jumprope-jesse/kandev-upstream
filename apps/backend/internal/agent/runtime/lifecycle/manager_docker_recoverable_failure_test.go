@@ -14,6 +14,7 @@ func TestDockerRecoverableFailureRetainsEstablishedContainer(t *testing.T) {
 		force  bool
 	}{
 		{StopReasonRecoverableAgentFailure, false},
+		{StopReasonPromptReadinessRecovery, false},
 		{StopReasonAgentBootstrapFailed, true},
 		{StopReasonTaskDeleted, true},
 		{"", true},

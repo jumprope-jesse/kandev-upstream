@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	agentruntime "github.com/kandev/kandev/internal/agent/runtime"
 	"github.com/kandev/kandev/internal/orchestrator/executor"
 	"github.com/kandev/kandev/internal/task/models"
 	v1 "github.com/kandev/kandev/pkg/api/v1"
@@ -117,6 +118,8 @@ func TestEnsureSessionRunning_ColdResumeReapsAndRetriesOnPromptReadyTimeout(t *t
 	// t.Cleanup runs LIFO, so this cancel-and-wait cleanup (registered after
 	// setupTestRepo's) drains every goroutine before the repo closes.
 	var launchCalls atomic.Int32
+	var stopReasonsMu sync.Mutex
+	var stopReasons []string
 	launchCtx, cancelLaunches := context.WithCancel(ctx)
 	var launchWG sync.WaitGroup
 	t.Cleanup(func() {
@@ -132,7 +135,10 @@ func TestEnsureSessionRunning_ColdResumeReapsAndRetriesOnPromptReadyTimeout(t *t
 			// Only the reap-and-retry relaunch (attempt 2+) ever reports ready.
 			return launchCalls.Load() >= 2
 		},
-		stopAgentWithReasonFunc: func(_ context.Context, _ string, _ string, _ bool) error {
+		stopAgentWithReasonFunc: func(_ context.Context, _ string, reason string, _ bool) error {
+			stopReasonsMu.Lock()
+			stopReasons = append(stopReasons, reason)
+			stopReasonsMu.Unlock()
 			return nil
 		},
 		launchAgentFunc: func(_ context.Context, req *executor.LaunchAgentRequest) (*executor.LaunchAgentResponse, error) {
@@ -189,5 +195,17 @@ func TestEnsureSessionRunning_ColdResumeReapsAndRetriesOnPromptReadyTimeout(t *t
 	}
 	if got := launchCalls.Load(); got != 2 {
 		t.Fatalf("expected a reap-and-retry relaunch (2 LaunchAgent calls), got %d", got)
+	}
+	// The reap must use the runtime's preserving reason: the retry resumes into
+	// the same retained workspace, so a Docker runtime has to keep it.
+	stopReasonsMu.Lock()
+	defer stopReasonsMu.Unlock()
+	if len(stopReasons) == 0 {
+		t.Fatal("expected the wedged launch to be reaped")
+	}
+	for _, reason := range stopReasons {
+		if reason != agentruntime.StopReasonPromptReadinessRecovery {
+			t.Fatalf("reap stop reason = %q, want %q", reason, agentruntime.StopReasonPromptReadinessRecovery)
+		}
 	}
 }

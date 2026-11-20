@@ -14,6 +14,7 @@ import (
 const (
 	StopReasonRecoverableAgentFailure = lifecycle.StopReasonRecoverableAgentFailure
 	StopReasonAgentBootstrapFailed    = lifecycle.StopReasonAgentBootstrapFailed
+	StopReasonPromptReadinessRecovery = lifecycle.StopReasonPromptReadinessRecovery
 )
 
 // New returns a Runtime backed by the supplied Backend (typically a

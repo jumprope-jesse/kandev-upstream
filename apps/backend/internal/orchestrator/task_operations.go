@@ -185,7 +185,10 @@ var (
 
 const promptFailureCleanupTimeout = 5 * time.Second
 
-const promptReadinessRecoveryStopReason = "prompt readiness recovery"
+// promptReadinessRecoveryStopReason reaps an agent that never became
+// promptable. The runtime keeps a retained Docker workspace for this reason,
+// because the resume that follows requires reusing it.
+const promptReadinessRecoveryStopReason = agentruntime.StopReasonPromptReadinessRecovery
 
 type agentPromptStreamRecoverer interface {
 	RecoverAgentPromptStream(ctx context.Context, sessionID string) error

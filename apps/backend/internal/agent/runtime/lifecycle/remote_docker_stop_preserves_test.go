@@ -80,6 +80,8 @@ func TestRemoteDockerExecutorPreservesRetainedWorkspace(t *testing.T) {
 		{"recoverable failure", StopReasonRecoverableAgentFailure, false},
 		{"reused bootstrap failure", StopReasonAgentBootstrapFailed, false},
 		{"unconfirmed agent stop on retained runtime", StopReasonRecoverableAgentFailure, true},
+		{"prompt readiness recovery", StopReasonPromptReadinessRecovery, false},
+		{"unconfirmed agent stop during prompt readiness recovery", StopReasonPromptReadinessRecovery, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			engine, server := newRecordingDockerEngine(t)

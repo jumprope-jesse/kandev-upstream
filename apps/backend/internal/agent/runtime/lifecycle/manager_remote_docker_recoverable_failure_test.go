@@ -36,6 +36,8 @@ func TestRemoteDockerRecoverableFailurePreservesRuntime(t *testing.T) {
 		{"established recoverable failure", StopReasonRecoverableAgentFailure, false, false, true, false},
 		{"resumed recoverable failure", StopReasonRecoverableAgentFailure, true, true, true, false},
 		{"reused bootstrap failure", StopReasonAgentBootstrapFailed, false, true, true, false},
+		{"prompt readiness reap after a memory kill", StopReasonPromptReadinessRecovery, true, true, true, false},
+		{"prompt readiness reap on established runtime", StopReasonPromptReadinessRecovery, false, false, true, false},
 		{"fresh bootstrap rollback", StopReasonAgentBootstrapFailed, false, false, true, true},
 		{"conversation resume on fresh compute", StopReasonAgentBootstrapFailed, true, false, true, true},
 		{"archive remains destructive", StopReasonTaskArchived, true, true, true, true},
@@ -114,6 +116,34 @@ func TestRemoteDockerRecoverableStopFailureRetainsOwner(t *testing.T) {
 	require.Empty(t, backend.forces, "an unconfirmed stop must not reach destructive runtime cleanup")
 	current, exists := mgr.executionStore.Get(execution.ID)
 	require.True(t, exists, "the failed stop keeps its exact cleanup ownership for retry")
+	require.Same(t, execution, current)
+}
+
+// A prompt-readiness reap whose agent stop cannot be confirmed keeps both the
+// retained container and the execution's cleanup ownership, so the following
+// resume can still reattach instead of failing with workspace reuse unsafe.
+func TestRemoteDockerPromptReadinessStopFailureRetainsOwner(t *testing.T) {
+	log := newTestRegistryLogger()
+	registry := NewExecutorRegistry(log)
+	backend := &stopTrackingExecutor{MockExecutor: MockExecutor{name: executor.NameRemoteDocker}}
+	registry.Register(backend)
+	mgr := NewManager(newTestRegistry(), &MockEventBus{}, registry, nil, nil, nil, ExecutorFallbackWarn, "", log)
+	cleanupManagerStopCh(t, mgr)
+	host, port := newAgentctlStatusServer(t, http.StatusInternalServerError)
+	execution := &AgentExecution{
+		ID: "execution-1", TaskID: "task-1", SessionID: "session-1",
+		RuntimeName: executor.NameRemoteDocker, isResumedSession: true,
+		attachedExistingCompute: true,
+		agentctl:                agentctl.NewClient(host, port, log),
+		ContainerID:             "container-1",
+	}
+	require.NoError(t, mgr.executionStore.Add(execution))
+
+	err := mgr.StopAgentWithReason(context.Background(), execution.ID, StopReasonPromptReadinessRecovery, true)
+	require.ErrorIs(t, err, errRecoverableStopUnconfirmed)
+	require.Empty(t, backend.forces, "an unconfirmed stop must not reach destructive runtime cleanup")
+	current, exists := mgr.executionStore.Get(execution.ID)
+	require.True(t, exists)
 	require.Same(t, execution, current)
 }
 
