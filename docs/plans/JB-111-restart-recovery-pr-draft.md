@@ -27,6 +27,9 @@ Branch: feature/jb-111-restart-recov-w9m
    retryable `SessionRecoveryGuardError`. The unstoppable-agent refusal (Retryable=false)
    deliberately still surfaces as FAILED: it needs another restart and an existing test
    (`TestPromptTask_NonRetryableRecoveryGuardRemainsVisible`) pins that.
+   Reason: the old agent cannot be stopped, so no retry or release can clear the refusal
+   without a restart; leaving the session in its prior state would show a session that looks
+   resumable but never can be, so the failure stays visible.
 4. OWNER_MISMATCH on a detached turn: `runSessionDeliveryRecovery` now flags
    `ownerMismatch` when the lifecycle result carries OWNER_MISMATCH, ErrDeliveryOwnerMismatch,
    or a 409 `DeliveryHTTPError` whose body has OWNER_MISMATCH (the evidenced chain is
@@ -47,18 +50,24 @@ unprovable outcomes and SSH refused, retries never release without proof),
 WAITING_FOR_INPUT session with queued messages, peer message; fails without the fix with
 state FAILED), `message_task_recovery_guard_test`.
 
-## Verification (Go 1.26.10, golangci-lint 2.9.0, cgo via `zig cc` as CC)
-From `apps/backend` with `CGO_ENABLED=1 CC=<zig cc wrapper>`:
-- `gofmt -l internal` : clean
-- `go vet ./internal/orchestrator/... ./internal/agent/runtime/lifecycle/ ./internal/mcp/handlers/` : clean
-- `golangci-lint run ./internal/orchestrator/... ./internal/agent/runtime/lifecycle/... ./internal/mcp/handlers/...` : 0 issues
-- `go test ./internal/orchestrator/executor ./internal/orchestrator -count=1` : ok (final commit)
-- `go test ./internal/agent/runtime/lifecycle -count=1` : ok (before the last small commit; no lifecycle files changed after)
-- `go test ./internal/mcp/handlers -count=1`, `go test ./internal/backendapp -count=1` : ok
-  (run before the last commit, which only narrowed the executor/orchestrator state-skip back
-  to retryable guard errors; the handlers' targeted `RecoveryGuard` tests were rerun after it)
-Not run: `./internal/agent/...` beyond lifecycle, the rest of `./internal/mcp/...`.
+## Verification (Go 1.26.10, cgo via `zig cc` as CC)
+Final head: the commit that adds this section (code is unchanged since `f7843d566`).
+Command, from `apps/backend`:
+`CGO_ENABLED=1 CC=<zig cc wrapper> go test -count=1 ./internal/...`
+Result: 330 packages ok; 7 packages hit the default 10-minute `go test` timeout on a loaded
+host (load average 25 to 40); 2 packages fail for reasons unrelated to this change.
+- The 6 timed-out packages that needed a rerun were rerun with
+  `go test -count=1 -timeout 120m -p 2 ./internal/agent/runtime/lifecycle ./internal/backendapp
+  ./internal/coordinator ./internal/mcp/handlers ./internal/orchestrator
+  ./internal/task/repository/sqlite`: all 6 `ok` (lifecycle 451s, backendapp 945s, coordinator
+  705s, mcp/handlers 1022s, orchestrator 767s, task/repository/sqlite 3580s).
+- `internal/common/config` (`TestConfigSourceLoadsStableYAMLFields`) and `internal/launcher`
+  (four `TestInstall*` cases: `chown: operation not permitted` when not root) fail identically
+  on an unmodified `main` checkout in the same environment. This branch does not touch either
+  package.
+- Not re-run in this pass: `gofmt`, `go vet`, `golangci-lint` (clean on the earlier build
+  turn; `gofmt -l` re-checked clean on the touched packages).
 
 ## Open
-Nothing calls `ReleaseRemoteRecoveryGuard` yet. The Jira upstream-gap note link is not
+Nothing calls `ReleaseRemoteRecoveryGuard` yet (review finding: SSH/Kubernetes guards still need a restart). The Jira upstream-gap note link is not
 added (no Jira access from the card).
