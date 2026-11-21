@@ -56,6 +56,18 @@ type OrchestratorService interface {
 	SteerTask(ctx context.Context, taskID, sessionID, prompt, model string, planMode bool, attachments []v1.MessageAttachment) (*orchestrator.PromptResult, error)
 }
 
+// openQuestionReader reports whether the session's turn is parked on a pending
+// clarification or permission request. Orchestrators without it keep the
+// direct-prompt behavior.
+type openQuestionReader interface {
+	SessionHasOpenQuestion(ctx context.Context, sessionID string) bool
+}
+
+func (h *MessageHandlers) sessionHasOpenQuestion(ctx context.Context, sessionID string) bool {
+	reader, ok := h.orchestrator.(openQuestionReader)
+	return ok && reader.SessionHasOpenQuestion(ctx, sessionID)
+}
+
 type taskTitleSessionClaimer interface {
 	ClaimTaskTitleSession(ctx context.Context, taskID, sessionID string) (bool, error)
 }
@@ -848,7 +860,7 @@ func (h *MessageHandlers) wsAddMessage(ctx context.Context, msg *ws.Message) (*w
 	// an unadvertised agent leaves this false, so behavior is unchanged.
 	steer := h.orchestrator != nil &&
 		h.orchestrator.SteerEligible(sessionResp.Session.ID, sessionResp.Session.State)
-	if !steer {
+	if !steer && !h.sessionHasOpenQuestion(ctx, sessionResp.Session.ID) {
 		if wsErr := h.errorForBlockedMessageSession(msg, sessionResp.Session.ID, sessionResp.Session.State); wsErr != nil {
 			return wsErr, nil
 		}
@@ -1511,6 +1523,10 @@ func (h *MessageHandlers) checkSessionStateForMessage(ctx context.Context, msg *
 		h.orchestrator.SteerEligible(sessionID, sessionDTO.State) {
 		return resp, nil
 	}
+	// A turn parked on a user question accepts the message into the queue.
+	if !isTerminalSessionState(sessionDTO.State) && h.sessionHasOpenQuestion(ctx, sessionID) {
+		return resp, nil
+	}
 	if wsErr := h.errorForBlockedMessageSession(msg, sessionID, sessionDTO.State); wsErr != nil {
 		if sessionDTO.State == models.TaskSessionStateRunning {
 			h.logBlockedRunningSession(sessionID, sessionDTO.State)
@@ -1668,6 +1684,11 @@ func (h *MessageHandlers) dispatchPromptAsync(
 			if coordinator, ok := h.orchestrator.(initialTaskBriefDispatchCoordinator); ok {
 				defer coordinator.CompleteInitialTaskBriefDispatch(promptCtx, taskID, sessionID)
 			}
+		}
+		if !isCreatedSession && h.queuePromptBehindOpenQuestion(
+			promptCtx, taskID, sessionID, content, model, planMode, attachments,
+		) {
+			return
 		}
 		if steer {
 			h.forwardMessageAsSteer(
@@ -1946,6 +1967,32 @@ func (h *MessageHandlers) markDeliveryMessageBlocked(ctx context.Context, messag
 		h.logger.Warn("failed to persist saved prompt delivery recovery status",
 			zap.String("message_id", messageID), zap.Error(err))
 	}
+}
+
+// queuePromptBehindOpenQuestion holds a recorded user message while the
+// session's turn waits on a clarification or permission request. Sending it
+// now would cancel the turn that owns the question; the queue drain delivers it
+// once the question is answered or expires. Returns true when queued.
+func (h *MessageHandlers) queuePromptBehindOpenQuestion(
+	ctx context.Context,
+	taskID, sessionID, content, model string,
+	planMode bool,
+	attachments []v1.MessageAttachment,
+) bool {
+	if !h.sessionHasOpenQuestion(ctx, sessionID) {
+		return false
+	}
+	queueMetadata := map[string]interface{}{orchestrator.MetaKeyTurnStartAlreadyProcessed: true}
+	if err := h.orchestrator.QueueUserPrompt(
+		ctx, taskID, sessionID, content, model, planMode, attachments, queueMetadata, true,
+	); err != nil {
+		h.logger.Warn("failed to queue prompt behind open question",
+			zap.String("task_id", taskID), zap.String("session_id", sessionID), zap.Error(err))
+		return false
+	}
+	h.logger.Info("queued prompt behind open question",
+		zap.String("task_id", taskID), zap.String("session_id", sessionID))
+	return true
 }
 
 func (h *MessageHandlers) queuePromptIfRuntimeUnavailable(

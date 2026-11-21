@@ -48,6 +48,7 @@ type fakeOrchestrator struct {
 	renameCalls             []renameCall
 	renameErr               error
 	liveClarifications      map[string]bool
+	pendingPermissions      map[string]bool
 
 	// Configurable: error returned by PromptTask. Cleared after first call so
 	// the retry-after-resume path can succeed on the second call.

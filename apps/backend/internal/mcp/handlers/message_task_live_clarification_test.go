@@ -20,6 +20,30 @@ func (f *fakeOrchestrator) SessionHasLiveClarification(_ context.Context, sessio
 	return f.liveClarifications[sessionID]
 }
 
+func (f *fakeOrchestrator) SessionHasOpenQuestion(ctx context.Context, sessionID string) bool {
+	f.mu.Lock()
+	permission := f.pendingPermissions[sessionID]
+	f.mu.Unlock()
+	return permission || f.SessionHasLiveClarification(ctx, sessionID)
+}
+
+func TestHandleMessageTask_PendingPermission_QueuesInsteadOfPrompting(t *testing.T) {
+	ctx := context.Background()
+	svc, repo := newTestTaskService(t)
+	sender, target, sess := seedTaskWithSession(t, svc, repo, models.TaskSessionStateWaitingForInput)
+	h, orch := newMessageTaskHandler(t, svc, repo)
+	orch.pendingPermissions = map[string]bool{sess.ID: true}
+
+	msg := makeWSMessage(t, ws.ActionMCPMessageTask, senderPayload(target.ID, "review report", sender.ID))
+	resp, err := h.handleMessageTask(ctx, msg)
+	require.NoError(t, err)
+	var payload map[string]interface{}
+	require.NoError(t, json.Unmarshal(resp.Payload, &payload))
+	assert.Equal(t, "queued", payload["status"])
+	assert.Empty(t, orch.promptCalls, "a session waiting on a permission request must not be prompted")
+	assert.Equal(t, 1, orch.queue.GetStatus(ctx, sess.ID).Count)
+}
+
 func TestHandleMessageTask_LiveClarification_QueuesInsteadOfPrompting(t *testing.T) {
 	ctx := context.Background()
 	svc, repo := newTestTaskService(t)

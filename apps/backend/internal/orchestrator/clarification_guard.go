@@ -81,3 +81,31 @@ func (s *Service) turnCompleteBlockedByUserInput(ctx context.Context, taskID, se
 	s.setSessionWaitingForInput(ctx, taskID, sessionID, session)
 	return true
 }
+
+type pendingActionReader interface {
+	GetPendingActionsBySessionIDs(ctx context.Context, sessionIDs []string) (map[string]models.TaskPendingAction, error)
+}
+
+// SessionHasOpenQuestion reports whether the session's current turn is parked
+// on a user question: a live clarification_request or a pending
+// permission_request. A plain message must be queued behind it rather than
+// cancel the turn that owns the question. Lookup failures fail closed.
+func (s *Service) SessionHasOpenQuestion(ctx context.Context, sessionID string) bool {
+	if sessionID == "" {
+		return false
+	}
+	if s.sessionHasLiveClarification(ctx, sessionID) {
+		return true
+	}
+	reader, ok := s.repo.(pendingActionReader)
+	if !ok {
+		return false
+	}
+	actions, err := reader.GetPendingActionsBySessionIDs(ctx, []string{sessionID})
+	if err != nil {
+		s.logger.Warn("failed to check pending permission requests; holding prompt",
+			zap.String("session_id", sessionID), zap.Error(err))
+		return true
+	}
+	return actions[sessionID] == models.TaskPendingActionPermission
+}

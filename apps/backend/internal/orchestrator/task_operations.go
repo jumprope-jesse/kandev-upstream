@@ -7609,7 +7609,7 @@ func (s *Service) finishPromptExecutorDispatch(
 	}
 	if execErr != nil {
 		execErr = s.persistRuntimeReplacementRecoveryBlock(ctx, sessionID, delivery, execErr)
-		if delivery != nil {
+		if delivery != nil && !delivery.settledBeforeInterrupt(context.WithoutCancel(ctx)) {
 			unknownErr := delivery.markInterrupted(
 				context.WithoutCancel(ctx), "prompt_dispatch_failed",
 			)

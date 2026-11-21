@@ -55,6 +55,20 @@ func (r *agentDeliverySubmissionRuntime) markInterrupted(
 	return err
 }
 
+// settledBeforeInterrupt reports whether the submission already reached a
+// terminal state (for example cancelled by a turn cancellation) so its prompt
+// outcome is known and no recovery block may be opened for it.
+func (r *agentDeliverySubmissionRuntime) settledBeforeInterrupt(ctx context.Context) bool {
+	if r == nil || r.store == nil || r.id == "" {
+		return false
+	}
+	stored, err := r.submissionMetadata(ctx)
+	if err != nil || stored == nil || stored.SessionID != r.sessionID {
+		return false
+	}
+	return terminalDeliverySubmission(stored.State)
+}
+
 func (r *agentDeliverySubmissionRuntime) markCompleted(ctx context.Context) error {
 	if r == nil || r.store == nil || r.id == "" || r.completed || r.dispatchOnly {
 		return nil

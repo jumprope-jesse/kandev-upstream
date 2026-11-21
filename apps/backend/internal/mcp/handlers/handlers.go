@@ -228,6 +228,14 @@ type liveClarificationReader interface {
 
 var _ liveClarificationReader = (*orchestrator.Service)(nil)
 
+// openQuestionReader widens liveClarificationReader to pending permission
+// requests; launchers that implement it hold peer messages for both.
+type openQuestionReader interface {
+	SessionHasOpenQuestion(ctx context.Context, sessionID string) bool
+}
+
+var _ openQuestionReader = (*orchestrator.Service)(nil)
+
 type peerMessageStartAdmissionProvider interface {
 	BeginPeerMessageStart(
 		context.Context,
@@ -3611,6 +3619,9 @@ func (h *Handlers) dispatchTaskMessage(ctx context.Context, taskID string, sessi
 // while the target agent waits on its own question; the queue drain delivers
 // it once the question no longer owns the turn.
 func (h *Handlers) sessionHasLiveClarification(ctx context.Context, sessionID string) bool {
+	if open, ok := h.sessionLauncher.(openQuestionReader); ok {
+		return open.SessionHasOpenQuestion(ctx, sessionID)
+	}
 	reader, ok := h.sessionLauncher.(liveClarificationReader)
 	return ok && reader.SessionHasLiveClarification(ctx, sessionID)
 }
